@@ -16,6 +16,11 @@ extension Controller {
     publica: sube a LinkedIn el último borrador que te mandé
     post cambia <qué>: rehace el borrador con tu cambio · post salta: descarta el borrador
     envia correos: envía la lista de correos del día (o "envia correos 1 3", "no correos")
+    logro <texto>: agrega un logro a tu perfil y regenera tus hojas de vida
+    trabajo <texto>: registra un cambio de trabajo (ej: trabajo nuevo Backend Senior en Acme desde dic 2026)
+    habilidad <nombre> <domino|conozco|evito>: cambia una habilidad; afecta búsquedas y filtros al instante
+    habilidades: muestra tus habilidades por nivel
+    hv: regenera tus hojas de vida sin cambios
     auto si / auto no: envío automático sin esperar tu "si" (también "auto freelance si", "auto empleo no", "auto correos si")
     (Puedes responder citando un aviso para elegir cuál lista.)
     """
@@ -89,6 +94,16 @@ extension Controller {
             runScheduled(.linkedInPublish, manual: true)
         case "post":
             handlePost(message.text)
+        case "logro", "logros":
+            requestProfileChange("Logro", rest(of: message.text), example: "logro bajé el costo de AWS 20% en KoralAT")
+        case "trabajo":
+            requestProfileChange("Cambio de trabajo", rest(of: message.text), example: "trabajo nuevo Backend Senior en Acme desde dic 2026")
+        case "habilidad", "skill":
+            handleSkill(rest(of: message.text))
+        case "habilidades", "skills":
+            reply(Profile.load().summary)
+        case "hv":
+            runScheduled(.profileUpdate, manual: true)
         case "buscar":
             let target = words.dropFirst().first ?? ""
             if target != "empleo" { FreelanceRadar.shared.checkNow() }
@@ -108,6 +123,44 @@ extension Controller {
         Seguimientos: próximos \(TextTools.countdown(Scheduler.shared.nextFollowUp))
         Informe semanal: \(TextTools.countdown(Scheduler.shared.nextReport))
         """
+    }
+
+    private func rest(of raw: String) -> String {
+        raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            .split(separator: " ", maxSplits: 1).dropFirst().first.map(String.init)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
+
+    private func requestProfileChange(_ kind: String, _ text: String, example: String) {
+        guard !text.isEmpty else {
+            reply("Escribe el detalle, por ejemplo: \(example)")
+            return
+        }
+        ProfileRequests.append(kind, text)
+        runScheduled(.profileUpdate, manual: true)
+    }
+
+    private func handleSkill(_ text: String) {
+        var parts = text.split(separator: " ").map(String.init)
+        guard parts.count >= 2, let level = SkillLevel.parse(parts.removeLast()) else {
+            if !text.isEmpty, let skill = Profile.load().skill(named: text) {
+                reply("\(skill.name): \(skill.level.rawValue)")
+            } else {
+                reply("Escribe: habilidad <nombre> <domino|conozco|evito>, por ejemplo: habilidad Go conozco")
+            }
+            return
+        }
+        let name = parts.joined(separator: " ")
+        switch ProfileEditor.setSkill(name, level: level) {
+        case .added:
+            reply("Agregué \(name) como \(level.rawValue). Ya cuenta en la próxima búsqueda.")
+        case .updated(let from):
+            reply("\(name): \(from.rawValue) → \(level.rawValue). Ya cuenta en la próxima búsqueda.")
+        case .unchanged:
+            reply("\(name) ya estaba como \(level.rawValue).")
+        case .failed(let reason):
+            reply("No pude cambiar la habilidad: \(reason)")
+        }
     }
 
     private func discard(_ found: Batch?, chatId: Int64) {

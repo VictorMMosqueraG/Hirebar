@@ -1,0 +1,53 @@
+{
+  "person": {
+    "name": "Nombre Apellido",
+    "headline": "Desarrollador Backend Senior",
+    "city": "Ciudad",
+    "country": "País",
+    "email": "correo@ejemplo.com",
+    "phone": "",
+    "links": { "linkedin": "", "github": "", "portfolio": "" },
+    "languages": [
+      { "name": "Español", "level": "nativo" },
+      { "name": "Inglés", "level": "A2", "note": "lee documentación, no conversa con fluidez" }
+    ],
+    "education": [
+      { "title": "Ingeniería en Sistemas", "school": "Universidad", "status": "en curso", "years": "2022 – 2026" }
+    ]
+  },
+  "preferences": {
+    "roles": ["Backend Semi Senior o Senior", "Full Stack con foco backend"],
+    "modality": "remoto o híbrido en tu ciudad",
+    "salary": { "copMonthly": 8000000, "copMinimum": 6000000, "usdMonthly": 2500 },
+    "freelanceRate": { "usdHour": 20 },
+    "availability": "inmediata"
+  },
+  "skills": [
+    { "name": "Node.js", "level": "domino", "years": 3, "aliases": ["node", "nodejs"] },
+    { "name": "NestJS", "level": "domino", "years": 3, "aliases": ["nest"] },
+    { "name": "PostgreSQL", "level": "domino", "years": 3, "aliases": ["postgres"] },
+    { "name": "React", "level": "conozco", "aliases": ["react.js", "reactjs"] },
+    { "name": "PHP", "level": "evito", "aliases": ["laravel"] }
+  ],
+  "experience": [
+    {
+      "role": "Desarrollador Backend",
+      "company": "Empresa",
+      "type": "empleo",
+      "from": "2024-01",
+      "to": null,
+      "achievements": [
+        { "text": "Bajé el tiempo de respuesta de la API de 800 ms a 200 ms optimizando consultas.", "tech": ["PostgreSQL", "Node.js"], "date": "2024-06" }
+      ]
+    }
+  ],
+  "projects": [
+    { "name": "Proyecto", "description": "Qué hace", "tech": ["NestJS"], "url": "" }
+  ],
+  "rules": [
+    "Nunca inventar experiencia, títulos ni cifras."
+  ],
+  "cvVariants": [
+    { "id": "node", "title": "Backend Node.js", "file": "HV_Backend_Node", "focus": ["Node.js", "NestJS", "TypeScript"] }
+  ]
+}

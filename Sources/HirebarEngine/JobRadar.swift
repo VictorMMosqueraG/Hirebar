@@ -22,7 +22,7 @@ public final class JobRadar: Radar {
         }
         guard beginCheck() else { return }
         let skip = Set(seen().keys)
-        let profile = SearchProfile.load()
+        let profile = SearchProfile.loadEffective()
         let active = Catalog.jobs.filter { config.isEnabled($0.id) }
         Task {
             var found: [Hit] = []

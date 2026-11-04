@@ -115,6 +115,18 @@ public final class Telegram: @unchecked Sendable {
         }
     }
 
+    public func sendDocument(_ file: URL, caption: String, chatId: Int64) {
+        guard let token = currentToken(),
+              let url = URL(string: "https://api.telegram.org/bot\(token)/sendDocument") else { return }
+        let fields = ["chat_id": String(chatId), "caption": String(caption.prefix(1000))]
+        DispatchQueue.global(qos: .utility).async {
+            let result = Net.postMultipart(url, fields: fields, fileField: "document", file: file)
+            if (result?["ok"] as? Bool) != true {
+                Log.write("Telegram: no se pudo enviar \(file.lastPathComponent) (\(result?["description"] ?? "sin respuesta"))")
+            }
+        }
+    }
+
     public func answerCallback(_ id: String, text: String? = nil) {
         var params: [String: Any] = ["callback_query_id": id]
         if let text { params["text"] = text }

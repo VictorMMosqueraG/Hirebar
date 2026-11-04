@@ -58,6 +58,7 @@ Cada modo tiene su playbook `instrucciones-<modo>.md` en la carpeta de datos.
 | `linkedin-publicar` | "publica" | publica el borrador aprobado |
 | `semanal` | domingo, 6 p. m. | informe y ajustes propuestos |
 | `ajustes` | "si" a los ajustes | aplica los cambios aprobados |
+| `perfil` | `logro`, `trabajo` o `hv` | actualiza `perfil.json` y `perfil.md` y escribe una hoja de vida HTML por variante; la app crea los PDF |
 
 ## Carpeta de datos
 
@@ -66,8 +67,11 @@ Cada modo tiene su playbook `instrucciones-<modo>.md` en la carpeta de datos.
 ```
 config.json                 interruptores, chat de Telegram, envío automático, tu nombre
 workspace/                  carpeta de trabajo de Claude
-├── perfil.md               tu experiencia (la única fuente para las propuestas)
-├── search-profile.json     qué busca el radar y qué descarta
+├── perfil.json             tu experiencia, logros, habilidades con nivel y variantes de HV
+├── perfil.md               lo mismo en texto, para las demás tareas
+├── hv/                     plantilla y HTML de cada hoja de vida (los PDF quedan en workspace/)
+├── perfil-cambios.txt      pedidos de logro o trabajo pendientes de aplicar
+├── search-profile.json     palabras de búsqueda y descartes de cada radar
 ├── instrucciones-*.md      un playbook por modo
 ├── lotes.json              avisos y su estado (14 días)
 ├── cupos.json              contactos de Workana y ofertas de Freelancer
@@ -80,6 +84,18 @@ workspace/                  carpeta de trabajo de Claude
 ```
 
 Los nombres de los archivos de datos están en español porque los leen y escriben los playbooks.
+
+## Perfil y habilidades
+
+Los radares usan `search-profile.json` ampliado con las habilidades de `perfil.json`:
+
+| Nivel | Freelance | Empleo |
+|---|---|---|
+| `domino` | suma a `strong` | suma a `strong` y `ownStack` |
+| `conozco` | suma a `stretch` | suma a `weak` (queda como RETO) |
+| `evito` | suma a `titleBlocked` y sale de las demás | suma a `blocked` y sale de las demás |
+
+Cambiar una habilidad (`habilidad Go conozco`) no necesita a Claude ni recompilar: aplica desde la búsqueda siguiente.
 
 ## Limpieza automática
 

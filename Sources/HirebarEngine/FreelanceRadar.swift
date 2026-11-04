@@ -28,7 +28,7 @@ public final class FreelanceRadar: Radar {
             .filter { config.isEnabled($0.id) && Quotas.exhausted($0.id) }
             .map { "\($0.name) sin cupos" }
         let skip = Set(seen().keys)
-        let profile = SearchProfile.load()
+        let profile = SearchProfile.loadEffective()
         Task {
             var found: [Hit] = []
             for source in active {

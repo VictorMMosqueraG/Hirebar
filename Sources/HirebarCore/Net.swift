@@ -47,4 +47,31 @@ public enum Net {
         guard let data = box.value else { return nil }
         return try? JSONSerialization.jsonObject(with: data) as? [String: Any]
     }
+
+    public static func postMultipart(_ url: URL, fields: [String: String], fileField: String, file: URL, timeout: TimeInterval = 60) -> [String: Any]? {
+        guard let content = try? Data(contentsOf: file) else { return nil }
+        let boundary = "hirebar-\(UUID().uuidString)"
+        var body = Data()
+        func append(_ text: String) { body.append(Data(text.utf8)) }
+        for (name, value) in fields {
+            append("--\(boundary)\r\nContent-Disposition: form-data; name=\"\(name)\"\r\n\r\n\(value)\r\n")
+        }
+        append("--\(boundary)\r\nContent-Disposition: form-data; name=\"\(fileField)\"; filename=\"\(file.lastPathComponent)\"\r\n")
+        append("Content-Type: application/octet-stream\r\n\r\n")
+        body.append(content)
+        append("\r\n--\(boundary)--\r\n")
+        var request = URLRequest(url: url, timeoutInterval: timeout)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.httpBody = body
+        let box = DataBox()
+        let done = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: request) { data, _, _ in
+            box.value = data
+            done.signal()
+        }.resume()
+        done.wait()
+        guard let data = box.value else { return nil }
+        return try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+    }
 }

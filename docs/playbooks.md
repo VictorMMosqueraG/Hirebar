@@ -11,6 +11,7 @@ La primera vez que abres Hirebar se copian los de [playbooks/](../playbooks) si 
 - **`ajustes-propuestos.json`** al final del informe semanal: lista de `{"titulo", "detalle"}`. La app la convierte en una lista para aprobar.
 - **`prospeccion/pendientes.json`** con `correos` numerados (`n`). Los de tipo `RESPUESTA` nunca se envían solos.
 - **`cupos.json`** actualizado con lo que muestra cada plataforma, para no buscar donde ya no quedan contactos.
+- **`hv/<id>.html`** por cada elemento de `cvVariants` en la tarea `perfil`. La app los convierte en `<file>.pdf` con Chrome sin ventana y borra `perfil-cambios.txt` si todo salió bien.
 - **`metricas-claude.json`** por semana ISO (`AAAA-SNN`) y sección (`freelance`, `empleo`, `prospeccion`).
 
 ## Herramientas que tiene Claude

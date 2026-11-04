@@ -1,5 +1,13 @@
 # Cambios
 
+## 0.2.0 (sin publicar)
+
+- `perfil.json` como fuente única: experiencia, logros con tecnologías, habilidades con nivel (`domino`, `conozco`, `evito`), preferencias y variantes de hoja de vida.
+- Las habilidades amplían las búsquedas y los filtros de los radares sin recompilar.
+- Comandos de Telegram `logro`, `trabajo`, `habilidad`, `habilidades` y `hv`.
+- Tarea `perfil`: Claude actualiza el perfil y escribe una hoja de vida HTML por variante; la app crea los PDF con Chrome sin ventana y los manda por Telegram.
+- Hoja de ruta con contenido para redes, portales como archivos, cazador de clientes y registro único.
+
 ## 0.1.0 (sin publicar)
 
 - Primera versión, separada de una herramienta privada. La parte de VPN y bastiones ahora vive en [Gatebar](https://github.com/VictorMMosqueraG/Gatebar).

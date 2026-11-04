@@ -22,14 +22,16 @@ Hirebar es una app para la barra de menú de macOS pensada para desarrolladores 
 - **Radar de empleo:** LinkedIn, Get on Board, Computrabajo, elempleo y Magneto. Antes de avisarte lee la descripción completa y descarta inglés obligatorio, híbrido fuera de tu ciudad, remoto solo para otro país, años de más o stack ajeno.
 - **Telegram:** la lista llega numerada con botones *Sí* / *No*. También funcionan `si 1 3`, `estado`, `buscar`, `informe`, `anota …`, `auto si` y otros. Si no configuras Telegram, los avisos llegan por [ntfy](https://ntfy.sh).
 - **Claude hace el trabajo pesado:** propuestas con precio según la competencia, postulaciones, seguimientos a las 48 h, prospección por correo, borrador semanal de LinkedIn e informe del domingo con ajustes que apruebas desde el celular.
-- **Perfil sin código:** palabras clave, bloqueos, salario mínimo, años máximos y ciudad en `search-profile.json`. Las reglas para Claude están en playbooks Markdown que puedes editar.
+- **Un solo perfil:** tu experiencia, logros y habilidades con nivel (`domino`, `conozco`, `evito`) viven en `perfil.json`. Las habilidades ajustan solas las búsquedas y los filtros.
+- **Hojas de vida al día:** escribes `logro …` o `trabajo …` en Telegram y Claude actualiza tu perfil y regenera una hoja de vida por tecnología (por ejemplo, Node, .NET y Java). Te llegan los PDF.
+- **Sin tocar código:** palabras clave, bloqueos, salario mínimo, años máximos y ciudad en `search-profile.json`. Las reglas para Claude están en playbooks Markdown que puedes editar.
 - **Todo local:** tus datos viven en tu Mac. El token de Telegram queda en el Llavero.
 
 ## Requisitos
 
 - macOS 13 Ventura o superior.
 - [Claude Code](https://claude.com/claude-code) instalado y con sesión iniciada (`claude` en la terminal).
-- Google Chrome con la extensión Claude in Chrome y tu sesión iniciada en los portales donde quieres que postule.
+- Google Chrome con la extensión Claude in Chrome (también se usa sin ventana para crear los PDF de tus hojas de vida) y tu sesión iniciada en los portales donde quieres que postule.
 - Un bot de Telegram (lo creas en 1 minuto con @BotFather).
 - Para compilar: Xcode 15 o Swift 5.9+.
 
@@ -44,7 +46,7 @@ scripts/bundle.sh --install     # compila y abre ~/Applications/Hirebar.app
 Después:
 
 1. Menú de Hirebar → **Telegram → Configurar bot…**, pega el token y envíale `/start` a tu bot.
-2. **Abrir carpeta de datos** → completa `workspace/perfil.md` con tu experiencia real.
+2. **Abrir carpeta de datos** → completa `workspace/perfil.json` con tu experiencia real, tus habilidades y tus variantes de hoja de vida (`cvVariants`). Luego escribe `hv` a tu bot para generar `perfil.md` y los PDF.
 3. Ajusta `workspace/search-profile.json` a tu stack (viene con un perfil backend de ejemplo).
 4. Activa **Abrir al iniciar sesión**.
 
@@ -62,7 +64,9 @@ Después:
 |---|---|
 | `config.json` | Portales activos (`sources`), envío automático (`autoFreelance`, `autoJobs`, `autoEmails`), minutos entre búsquedas, tu nombre (`ownerName`), chat de Telegram y tema de ntfy. Casi todo se cambia desde el menú o con comandos de Telegram. |
 | `workspace/search-profile.json` | Qué busca y qué descarta cada radar. Si un campo falta, se usa el valor por defecto. |
-| `workspace/perfil.md` | Tu experiencia. Claude no inventa nada que no esté aquí. |
+| `workspace/perfil.json` | Tu experiencia, logros, habilidades con nivel, preferencias y variantes de hoja de vida. Claude no inventa nada que no esté aquí. |
+| `workspace/perfil.md` | La misma información en texto, para las demás tareas. Claude la mantiene igual a `perfil.json`. |
+| `workspace/hv/` | Plantilla y HTML de cada hoja de vida. Los PDF quedan en `workspace/`. |
 | `workspace/instrucciones-*.md` | Un playbook por tarea. Mira [docs/playbooks.md](docs/playbooks.md). |
 
 Todo está en `~/Library/Application Support/Hirebar/`.
@@ -76,6 +80,9 @@ Todo está en `~/Library/Application Support/Hirebar/`.
 | `buscar` · `buscar freelance` · `buscar empleo` | Busca ya. |
 | `seguimientos` · `informe` | Corre esas tareas ya. |
 | `anota <texto>` | Guarda una nota para el informe del domingo. |
+| `logro <texto>` · `trabajo <texto>` | Actualiza tu perfil y regenera tus hojas de vida. |
+| `habilidad <nombre> <domino\|conozco\|evito>` · `habilidades` | Cambia o muestra tus habilidades; afecta la búsqueda siguiente. |
+| `hv` | Regenera tus hojas de vida sin cambios. |
 | `post` · `post cambia <qué>` · `post salta` · `publica` | Borrador de LinkedIn. |
 | `envia correos` · `envia correos 1 3` · `no correos` | Correos de prospección del día. |
 | `auto si` · `auto no` · `auto freelance si` · `auto empleo no` · `auto correos si` | Envío automático sin esperar tu "si". |
@@ -110,7 +117,7 @@ scripts/                bundle.sh
 - La app solo busca y organiza. Claude solo trabaja cuando hay algo aprobado, con herramientas limitadas (archivos de la carpeta de trabajo, web y Chrome) y un tope de una hora por corrida.
 - Si la sesión de Claude Code se vence, las listas no se pierden: quedan pendientes para reintentar y te llega un aviso.
 
-Más detalle en [docs/arquitectura.md](docs/arquitectura.md).
+Más detalle en [docs/arquitectura.md](docs/arquitectura.md). Lo que viene (contenido para redes, portales como archivos, cazador de clientes) está en [docs/hoja-de-ruta.md](docs/hoja-de-ruta.md).
 
 ## Uso responsable
 

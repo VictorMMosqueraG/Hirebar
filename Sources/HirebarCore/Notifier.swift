@@ -39,6 +39,14 @@ public enum Notifier {
         }
     }
 
+    public static func sendFile(_ file: URL, caption: String) {
+        guard canUseTelegram else {
+            Log.write("Archivo listo sin canal para enviarlo: \(file.path)")
+            return
+        }
+        Telegram.shared.sendDocument(file, caption: caption, chatId: Config.load().chatId)
+    }
+
     public static func ntfy(title: String, message: String) {
         let topic = Config.load().ntfyTopic
         guard !topic.isEmpty, let url = URL(string: "https://ntfy.sh/") else {

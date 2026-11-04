@@ -84,6 +84,7 @@ public final class Controller {
             case .linkedInPublish: reply("Publicando en LinkedIn el borrador que aprobaste; te confirmo al terminar.")
             case .followUp: reply("Revisando seguimientos ahora; te aviso si escribo a algún cliente.")
             case .prospectingSend: reply("Enviando los correos aprobados; te confirmo al terminar.")
+            case .profileUpdate: reply("Actualizando tu perfil y tus hojas de vida; te mando los PDF al terminar.")
             default: break
             }
         }
@@ -248,9 +249,28 @@ public final class Controller {
         switch mode {
         case .weeklyReport: offerAdjustments()
         case .prospecting: offerProspectingEmails()
+        case .profileUpdate: finishProfileUpdate()
         case .linkedInDraft:
             reply("¿Lo subo a LinkedIn? Responde \"publica\" para subirlo tal cual, \"post cambia <qué>\" para ajustarlo o \"post salta\" para no publicarlo esta semana.")
         default: break
+        }
+    }
+
+    private func finishProfileUpdate() {
+        ProfileRequests.clear()
+        let profile = Profile.load()
+        guard !profile.cvVariants.isEmpty else {
+            reply("perfil.json no tiene hojas de vida definidas (cvVariants), así que no generé PDF.")
+            return
+        }
+        CVRenderer.renderAll(profile) { [weak self] result in
+            for file in result.made {
+                Notifier.sendFile(file, caption: "Hoja de vida actualizada: \(file.lastPathComponent)")
+            }
+            var lines = ["Hojas de vida: \(result.made.count) de \(profile.cvVariants.count) listas."]
+            if !result.missing.isEmpty { lines.append("Claude no dejó el HTML de: \(result.missing.joined(separator: ", ")).") }
+            if !result.failed.isEmpty { lines.append("No pude crear el PDF de: \(result.failed.joined(separator: ", ")) (revisa que Google Chrome esté instalado).") }
+            self?.reply(lines.joined(separator: "\n"))
         }
     }
 

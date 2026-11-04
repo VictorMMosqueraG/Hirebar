@@ -59,6 +59,16 @@ enum AgentPrompts {
 
             \(list)
             """
+        case .profileUpdate:
+            let request = (try? String(contentsOf: Paths.workspaceFile(ProfileRequests.fileName), encoding: .utf8))?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let what = request.isEmpty ? "No hay cambios nuevos: solo regenera las hojas de vida." : "Cambios que pidió \(owner):\n\(request)"
+            return """
+            Actualizar perfil \(batch.id) (\(now)). Actualiza perfil.json y perfil.md y regenera las hojas de vida en HTML \
+            según tus instrucciones. No necesitas el navegador.
+
+            \(what)
+            """
         case .jobs:
             return """
             Lote \(batch.id) (\(now)). \(owner) respondió SÍ desde Telegram: postúlalo YA a estas vacantes, \
@@ -89,6 +99,7 @@ enum AgentPrompts {
         case .adjustments: return "aplicando \(count) ajuste(s) (desde \(hour))"
         case .jobs: return "haciendo \(count) postulaciones (desde \(hour))"
         case .freelance: return "haciendo \(count) propuestas (desde \(hour))"
+        case .profileUpdate: return "actualizando tu perfil y hojas de vida (desde \(hour))"
         }
     }
 }

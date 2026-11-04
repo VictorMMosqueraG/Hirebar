@@ -19,6 +19,7 @@ public enum Mode: String, Codable, CaseIterable, Sendable {
     case social = "redes"
     case linkedInDraft = "linkedin-borrador"
     case linkedInPublish = "linkedin-publicar"
+    case profileUpdate = "perfil"
 
     public var batchPrefix: String {
         switch self {
@@ -30,6 +31,7 @@ public enum Mode: String, Codable, CaseIterable, Sendable {
         case .social: return "r"
         case .prospecting, .prospectingSend: return "p"
         case .followUp: return "g"
+        case .profileUpdate: return "h"
         }
     }
 
