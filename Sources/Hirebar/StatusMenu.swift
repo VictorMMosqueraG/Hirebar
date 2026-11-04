@@ -6,6 +6,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     static let shared = StatusMenu()
 
     var onRefresh: ((Bool) -> Void)?
+    var onOpenSettings: ((AgentKind) -> Void)?
     private var headers: [(NSMenuItem, AgentKind)] = []
     private var checks: [(NSMenuItem, () -> Bool)] = []
     private var labels: [(NSMenuItem, () -> String)] = []
@@ -97,10 +98,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         menu.addItem(action(kind == .profile ? "Regenerar hojas de vida" : "Correr ahora") {
             Controller.shared.runAgentNow(kind)
         })
-        menu.addItem(action("Editar configuración…") {
-            AgentStore.writeMissingDefaults()
-            NSWorkspace.shared.open(AgentStore.url(for: kind))
-        })
+        menu.addItem(action("Ajustes…") { [weak self] in self?.onOpenSettings?(kind) })
         return menu
     }
 

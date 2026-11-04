@@ -5,6 +5,14 @@ public enum SkillLevel: String, Codable, CaseIterable, Sendable {
     case familiar = "conozco"
     case avoid = "evito"
 
+    public var title: String {
+        switch self {
+        case .expert: return "Domino"
+        case .familiar: return "Conozco"
+        case .avoid: return "Evito"
+        }
+    }
+
     public static func parse(_ text: String) -> SkillLevel? {
         let value = TextTools.normalize(text).trimmingCharacters(in: .whitespaces)
         switch value {
@@ -103,6 +111,25 @@ public enum ProfileEditor {
         case updated(from: SkillLevel)
         case unchanged
         case failed(String)
+    }
+
+    public static func saveSkills(_ skills: [Skill], at url: URL = Profile.url) throws {
+        var root: [String: Any] = [:]
+        if let data = try? Data(contentsOf: url) {
+            guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            root = object
+        }
+        root["skills"] = skills.filter { !$0.name.trimmingCharacters(in: .whitespaces).isEmpty }.map { skill -> [String: Any] in
+            var entry: [String: Any] = ["name": skill.name.trimmingCharacters(in: .whitespaces),
+                                        "level": skill.level.rawValue,
+                                        "aliases": skill.aliases.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }]
+            if let years = skill.years { entry["years"] = years }
+            return entry
+        }
+        let data = try JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
+        try data.write(to: url, options: .atomic)
     }
 
     @discardableResult

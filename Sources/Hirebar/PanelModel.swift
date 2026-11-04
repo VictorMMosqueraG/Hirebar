@@ -62,6 +62,7 @@ final class PanelModel: ObservableObject {
     var onSendTest: (() -> Void)?
     var onForgetChat: (() -> Void)?
     var onQuit: (() -> Void)?
+    var onOpenSettings: ((SettingsPage?) -> Void)?
 
     func refresh() {
         let running = Controller.shared.runningAgent
@@ -142,9 +143,8 @@ final class PanelModel: ObservableObject {
         refresh()
     }
 
-    func editSettings(_ kind: AgentKind) {
-        AgentStore.writeMissingDefaults()
-        NSWorkspace.shared.open(AgentStore.url(for: kind))
+    func editSettings(_ kind: AgentKind?) {
+        onOpenSettings?(kind.map { .agent($0) })
     }
 
     func toggleLogin() {

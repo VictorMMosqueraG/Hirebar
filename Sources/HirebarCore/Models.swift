@@ -33,6 +33,21 @@ public enum Mode: String, Codable, CaseIterable, Sendable {
     }
 
     public var hasItems: Bool { self == .freelance || self == .jobs }
+
+    public var title: String {
+        switch self {
+        case .freelance: return "Enviar propuestas"
+        case .jobs: return "Postular a vacantes"
+        case .followUp: return "Seguimientos de propuestas"
+        case .weeklyReport: return "Análisis semanal"
+        case .prospecting: return "Buscar empresas y negocios"
+        case .prospectingSend: return "Enviar correos aprobados"
+        case .social: return "Buscar vacantes en redes"
+        case .linkedInDraft: return "Borrador de LinkedIn"
+        case .linkedInPublish: return "Publicar en LinkedIn"
+        case .profileUpdate: return "Actualizar perfil y hojas de vida"
+        }
+    }
 }
 
 public enum BatchStatus: String, Codable, Sendable {

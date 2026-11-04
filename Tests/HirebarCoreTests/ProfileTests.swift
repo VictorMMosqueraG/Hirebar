@@ -63,3 +63,18 @@ final class ProfileTests: XCTestCase {
         XCTAssertEqual(profile.cvVariants.first?.id, "node")
     }
 }
+
+final class SaveSkillsTests: XCTestCase {
+    func testSaveSkillsKeepsTheRestOfTheProfile() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("perfil-\(UUID().uuidString).json")
+        try Data(#"{"person": {"name": "Ana"}, "cvVariants": [], "skills": []}"#.utf8).write(to: url)
+        try ProfileEditor.saveSkills([
+            Skill(name: " Go ", level: .familiar, years: 1, aliases: ["golang", " "]),
+            Skill(name: "  ", level: .expert),
+        ], at: url)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        XCTAssertEqual((object["person"] as? [String: Any])?["name"] as? String, "Ana")
+        let profile = try JSONDecoder().decode(Profile.self, from: Data(contentsOf: url))
+        XCTAssertEqual(profile.skills, [Skill(name: "Go", level: .familiar, years: 1, aliases: ["golang"])])
+    }
+}

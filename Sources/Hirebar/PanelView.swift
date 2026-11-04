@@ -70,6 +70,8 @@ struct PanelView: View {
             FooterButton(symbol: "folder", help: "Carpeta de datos") { model.open(Paths.root) }
             Spacer()
             Menu {
+                Button("Ajustes…") { model.editSettings(nil) }
+                Divider()
                 Button("Configurar bot de Telegram…") { model.onConfigureTelegram?() }
                 Button("Enviar aviso de prueba") { model.onSendTest?() }
                 Button("Volver a vincular el chat") { model.onForgetChat?() }
@@ -144,6 +146,7 @@ struct AgentRow: View {
             }
             .contentShape(Rectangle())
             .onTapGesture { expanded.toggle() }
+            .help(agent.purpose)
 
             if expanded {
                 details
@@ -162,6 +165,9 @@ struct AgentRow: View {
 
     private var details: some View {
         VStack(alignment: .leading, spacing: 6) {
+            Text(agent.purpose)
+                .font(.system(size: 11))
+                .fixedSize(horizontal: false, vertical: true)
             if !agent.stats.isEmpty {
                 Text(agent.stats.joined(separator: " · "))
                     .font(.system(size: 11))
@@ -192,7 +198,7 @@ struct AgentRow: View {
                             ForEach(agent.schedule, id: \.self) { line in Text(line) }
                         }
                     }
-                    Button("Editar configuración…") { model.editSettings(agent.id) }
+                    Button("Ajustes de \(agent.name)…") { model.editSettings(agent.id) }
                 } label: {
                     Image(systemName: "ellipsis")
                 }

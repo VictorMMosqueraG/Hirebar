@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private let panel = PanelModel()
     private var activity: NSObjectProtocol?
     private var panelTimer: Timer?
+    private let settings = SettingsWindowController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         activity = ProcessInfo.processInfo.beginActivity(options: [.userInitiatedAllowingIdleSystemSleep],
@@ -29,6 +30,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         panel.onSendTest = { StatusMenu.shared.sendTest() }
         panel.onForgetChat = { [weak self] in self?.closePanel { StatusMenu.shared.forgetChat() } }
         panel.onQuit = { NSApp.terminate(nil) }
+        panel.onOpenSettings = { [weak self] page in self?.closePanel { self?.settings.show(page) } }
+        StatusMenu.shared.onOpenSettings = { [weak self] kind in self?.settings.show(.agent(kind)) }
+        settings.onSaved = { [weak self] in
+            self?.panel.refresh()
+            StatusMenu.shared.refresh()
+        }
         popover.behavior = .transient
         popover.delegate = self
         popover.animates = true

@@ -8,6 +8,8 @@
 - Tarea `perfil`: Claude actualiza el perfil y escribe una hoja de vida HTML por variante; la app crea los PDF con Chrome sin ventana y los manda por Telegram.
 - Agentes independientes (Empleo, Freelance, Clientes, Contenido, Perfil y Analista), cada uno con su archivo `agentes/<id>.json`: prendido, envío automático, frecuencia de búsqueda, cupo diario y tareas con horario propio.
 - Panel al hacer clic en el maletín: lista compacta de agentes agrupada en Buscar trabajo, Conseguir clientes y Tú, con estado, próxima ejecución e interruptor. Al tocar un agente se abre su detalle (números de la semana, envío automático, Correr ahora, portales y horario). El clic derecho abre el menú clásico.
+- Ventana de Ajustes como la de Gatebar: cada agente con nombre, descripción, prendido, envío automático, frecuencia de búsqueda, portales, cupo diario y, por tarea, días, horas y tolerancia si el Mac estaba dormido. Página de Habilidades con nivel y otros nombres. Nada de editar archivos a mano.
+- Cada agente muestra su descripción al pasar el mouse y al abrir su detalle.
 - Menú con un submenú por agente y comandos `agentes`, `agente <nombre> on/off`, `corre <nombre>` y `auto <agente> si/no`.
 - El informe del domingo solo analiza: se quitan los ajustes propuestos y el modo `ajustes`.
 - Borradores de LinkedIn martes y jueves.

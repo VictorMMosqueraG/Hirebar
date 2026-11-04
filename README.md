@@ -23,7 +23,9 @@ Tú
   📄  ☰  📁                                                ⚙︎
 ```
 
-Al tocar un agente se abre su detalle: números de la semana, envío automático, Correr ahora y un menú con portales, horario y configuración.
+Al tocar un agente se abre su detalle: qué hace, números de la semana, envío automático, Correr ahora y un menú con portales, horario y sus ajustes.
+
+**Ajustes…** (en el engranaje del panel) abre una ventana como la de Gatebar: a la izquierda los agentes y tus habilidades; a la derecha un formulario para prenderlos, poner días, horas, frecuencia, portales y cupo diario. No hace falta editar archivos.
 
 ## Qué hace
 
