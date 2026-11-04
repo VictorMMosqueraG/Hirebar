@@ -42,6 +42,15 @@ public enum Notifier {
         Telegram.shared.sendDocument(file, caption: caption, chatId: Config.load().chatId)
     }
 
+    public static func sendPhotos(_ files: [URL], caption: String, completion: @escaping () -> Void) {
+        guard canUseTelegram, !files.isEmpty else {
+            if !files.isEmpty { Log.write("Imágenes listas sin canal para enviarlas: \(files.first?.deletingLastPathComponent().path ?? "")") }
+            completion()
+            return
+        }
+        Telegram.shared.sendPhotos(files, caption: caption, chatId: Config.load().chatId, completion: completion)
+    }
+
     public static func ntfy(title: String, message: String) {
         let topic = Config.load().ntfyTopic
         guard !topic.isEmpty, let url = URL(string: "https://ntfy.sh/") else {

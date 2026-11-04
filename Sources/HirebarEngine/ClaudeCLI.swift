@@ -15,17 +15,21 @@ enum ClaudeCLI {
         return (out?.hasPrefix("/") ?? false) ? out : nil
     }
 
-    static func process(executable: String, prompt: String, playbook: URL, output: URL, errors: URL) -> Process {
+    static func process(executable: String, prompt: String, playbook: URL, output: URL, errors: URL, browser: Bool = true) -> Process {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executable)
         process.currentDirectoryURL = Paths.workspace
-        process.arguments = ["-p", prompt,
-                             "--chrome",
-                             "--permission-mode", "bypassPermissions",
-                             "--tools", tools.joined(separator: ","),
-                             "--append-system-prompt-file", playbook.path,
-                             "--output-format", "text",
-                             "--allowedTools", "mcp__claude-in-chrome"] + tools
+        // Sin navegador la sesión arranca más rápido (por ejemplo, para escribir una publicación).
+        var arguments: [String] = ["-p", prompt]
+        if browser { arguments.append("--chrome") }
+        arguments += ["--permission-mode", "bypassPermissions",
+                      "--tools", tools.joined(separator: ","),
+                      "--append-system-prompt-file", playbook.path,
+                      "--output-format", "text",
+                      "--allowedTools"]
+        if browser { arguments.append("mcp__claude-in-chrome") }
+        arguments += tools
+        process.arguments = arguments
         var env = ProcessInfo.processInfo.environment
         env["PATH"] = searchPath
         process.environment = env
@@ -59,14 +63,16 @@ enum ClaudeCLI {
         let status: String
     }
 
-    static func makeProcess(engine: AIEngineSettings, prompt: String, playbook: URL, output: URL, errors: URL) -> Result<Process, LaunchProblem> {
+    static func makeProcess(engine: AIEngineSettings, prompt: String, playbook: URL, output: URL, errors: URL,
+                            browser: Bool = true) -> Result<Process, LaunchProblem> {
         if engine.kind == .claude {
             guard let claude = path() else {
                 return .failure(LaunchProblem(
                     message: "No encontré Claude Code en el Mac. Instálalo con: curl -fsSL https://claude.ai/install.sh | bash, inicia sesión con 'claude' y vuelve a responder si. O elige otra IA en Ajustes → Motor de IA.",
                     status: "falta instalar Claude Code"))
             }
-            return .success(process(executable: claude, prompt: prompt, playbook: playbook, output: output, errors: errors))
+            return .success(process(executable: claude, prompt: prompt, playbook: playbook, output: output, errors: errors,
+                                    browser: browser))
         }
         let command = engine.command
         guard !command.isEmpty else {

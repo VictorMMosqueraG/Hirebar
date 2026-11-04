@@ -81,11 +81,15 @@ public final class Controller {
         }
         let batch = Batch(mode: mode, status: .running, manual: manual)
         BatchStore.upsert(batch)
-        queue.append((batch, []))
+        // Una publicación pedida a mano no espera detrás de las búsquedas: va de primera en la fila.
+        let jumpsQueue = manual && mode == .linkedInDraft
+        if jumpsQueue { queue.insert((batch, []), at: 0) } else { queue.append((batch, [])) }
         if manual {
             switch mode {
             case .weeklyReport: reply("Preparando el informe semanal; te lo mando al terminar.")
-            case .linkedInDraft: reply("Armando el borrador para LinkedIn; te lo mando antes de publicar nada.")
+            case .linkedInDraft:
+                reply("Armando la publicación con sus imágenes; te la mando antes de publicar nada."
+                      + (running == nil ? "" : " Empieza apenas termine lo que está corriendo ahora."))
             case .linkedInPublish: reply("Publicando en LinkedIn el borrador que aprobaste; te confirmo al terminar.")
             case .followUp: reply("Revisando seguimientos ahora; te aviso si escribo a algún cliente.")
             case .prospectingSend: reply("Enviando los correos aprobados; te confirmo al terminar.")
@@ -134,10 +138,12 @@ public final class Controller {
         FileManager.default.createFile(atPath: outURL.path, contents: nil)
         FileManager.default.createFile(atPath: errURL.path, contents: nil)
         let owner = Config.load().ownerName
+        if batch.mode == .linkedInDraft { SlideRenderer.prepare() }
         let launch = ClaudeCLI.makeProcess(engine: AI.settings,
                                            prompt: AgentPrompts.prompt(for: batch, items: items, owner: owner),
                                            playbook: Paths.playbook(for: batch.mode),
-                                           output: outURL, errors: errURL)
+                                           output: outURL, errors: errURL,
+                                           browser: batch.mode != .linkedInDraft)
         guard case .success(let process) = launch else {
             if case .failure(let problem) = launch {
                 reply(problem.message)
@@ -241,8 +247,22 @@ public final class Controller {
         case .prospecting: offerProspectingEmails()
         case .profileUpdate: finishProfileUpdate()
         case .linkedInDraft:
-            reply("¿Lo subo a LinkedIn? Responde \"publica\" para subirlo tal cual, \"post cambia <qué>\" para ajustarlo o \"post salta\" para no publicarlo esta semana.")
+            sendSlides()
         default: break
+        }
+    }
+
+    private func sendSlides() {
+        SlideRenderer.renderAll { [weak self] made, failed in
+            Notifier.sendPhotos(made, caption: "Imágenes de la publicación (\(made.count))") {
+                var note = ""
+                if made.isEmpty {
+                    note = "Esta vez no salieron imágenes (\(AI.name) no dejó las láminas o Chrome no pudo convertirlas). "
+                } else if failed > 0 {
+                    note = "\(failed) lámina(s) no se pudieron convertir. "
+                }
+                self?.reply(note + "¿Lo subo a LinkedIn? Responde \"publica\" para subirlo tal cual, \"post cambia <qué>\" para ajustarlo o \"post salta\" para no publicarlo.")
+            }
         }
     }
 

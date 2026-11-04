@@ -127,6 +127,26 @@ public final class Telegram: @unchecked Sendable {
         }
     }
 
+    /// Manda las imágenes una por una, en orden, y avisa al terminar.
+    public func sendPhotos(_ files: [URL], caption: String, chatId: Int64, completion: (() -> Void)? = nil) {
+        guard let token = currentToken(),
+              let url = URL(string: "https://api.telegram.org/bot\(token)/sendPhoto") else {
+            completion?()
+            return
+        }
+        DispatchQueue.global(qos: .utility).async {
+            for (index, file) in files.enumerated() {
+                var fields = ["chat_id": String(chatId)]
+                if index == 0 && !caption.isEmpty { fields["caption"] = String(caption.prefix(1000)) }
+                let result = Net.postMultipart(url, fields: fields, fileField: "photo", file: file)
+                if (result?["ok"] as? Bool) != true {
+                    Log.write("Telegram: no se pudo enviar la imagen \(file.lastPathComponent) (\(result?["description"] ?? "sin respuesta"))")
+                }
+            }
+            DispatchQueue.main.async { completion?() }
+        }
+    }
+
     public func answerCallback(_ id: String, text: String? = nil) {
         var params: [String: Any] = ["callback_query_id": id]
         if let text { params["text"] = text }

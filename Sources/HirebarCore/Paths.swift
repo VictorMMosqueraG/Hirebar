@@ -25,8 +25,15 @@ public enum Paths {
     }
 
     public static func playbook(for mode: Mode) -> URL {
-        workspace.appendingPathComponent("instrucciones-\(mode.rawValue).md")
+        switch mode {
+        case .linkedInDraft: return workspace.appendingPathComponent("instrucciones-contenido.md")
+        case .linkedInPublish: return workspace.appendingPathComponent("instrucciones-contenido-publicar.md")
+        default: return workspace.appendingPathComponent("instrucciones-\(mode.rawValue).md")
+        }
     }
+
+    /// Láminas (HTML de 1080×1350 y sus PNG) de la publicación en borrador.
+    public static var slides: URL { linkedIn.appendingPathComponent("laminas", isDirectory: true) }
 
     public static func ensure() {
         for dir in [root, workspace, runs, reports, prospecting, linkedIn, logs] {

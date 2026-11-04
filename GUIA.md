@@ -30,7 +30,7 @@ Un clic en el maletín de la barra abre el panel. Clic derecho abre el menú cl�
 | Empleo | Revisa LinkedIn, Get on Board, Computrabajo, elempleo y Magneto; descarta lo que no encaja y postula. También busca vacantes publicadas en redes. | Búsqueda cada 30 min; redes cada 2 h de 8 a. m. a 8 p. m. | Con envío automático, nada. Sin él, respondes `si`, `si 1 3` o `no` en Telegram. |
 | Freelance | Revisa Workana y Freelancer; analiza la competencia, pone precio, redacta y envía. Hace seguimientos a las 48 h. | Búsqueda cada 20 min; seguimientos 10 a. m. y 4 p. m. | Igual que Empleo. Si un cliente responde, te llega primero: contestas tú. |
 | Clientes | Busca empresas y negocios que necesitan software y les escribe por correo desde tu Gmail. | Lunes a viernes, 7 a. m. | Con envío automático, nada. Sin él, `envia correos`, `envia correos 1 3` o `no correos`. Las respuestas con interés siempre las apruebas tú. |
-| Contenido | Escribe un borrador para tu LinkedIn con un logro real. | Martes y jueves, 9 a. m. | `publica`, `post cambia <qué>` o `post salta`. Nunca publica sin tu aprobación. |
+| Contenido | Prepara una publicación para tu LinkedIn con texto e imágenes (carrusel). Los temas no salen de tu hoja de vida: consejos de tecnología para negocios, mitos del software, noticias de la semana y buenas prácticas. Te llega a Telegram con las imágenes. | Martes y jueves, 9 a. m. (o cuando escribas `post`, que pasa de primero en la fila). | `publica`, `post cambia <qué>` o `post salta`. Nunca publica sin tu aprobación. |
 | Perfil | Mantiene tu perfil y regenera tus hojas de vida. | Cuando se lo pides. | Ver la sección siguiente. |
 | Analista | Te manda los números de la semana de cada agente. No cambia nada. | Domingo, 6 p. m. | Leerlo y decidir qué ajustar. |
 
@@ -76,7 +76,7 @@ Todo sale de un solo archivo: `workspace/perfil.json`. De ahí se alimentan:
 - las búsquedas (tus habilidades deciden qué se avisa y qué se descarta),
 - las propuestas y postulaciones (Claude solo usa logros que estén ahí),
 - tus hojas de vida (una por tecnología),
-- los borradores de LinkedIn.
+- las publicaciones en borrador para LinkedIn (texto e imágenes).
 
 `workspace/perfil.md` es la misma información en texto; Claude lo mantiene igual al JSON. No lo edites a mano.
 

@@ -27,8 +27,9 @@ enum AgentPrompts {
                 .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             let change = note.isEmpty ? "" : "\n\nCambio que pidió \(owner) sobre el borrador anterior: \(note)"
             return """
-            Borrador LinkedIn \(batch.id) (\(now)). Escribe la publicación de esta semana según tus instrucciones \
-            y guárdala en linkedin/borrador.md. NO publiques nada: \(owner) la aprueba primero desde Telegram.\(change)
+            Contenido \(batch.id) (\(now)). Prepara la publicación según tus instrucciones: el texto en \
+            linkedin/borrador.md y las imágenes como HTML de 1080×1350 en linkedin/laminas/. El tema NO sale de \
+            la hoja de vida ni de los logros de \(owner). NO publiques nada: \(owner) la aprueba primero desde Telegram.\(change)
             """
         case .prospecting:
             return """
@@ -51,7 +52,8 @@ enum AgentPrompts {
         case .linkedInPublish:
             return """
             Publicar LinkedIn \(batch.id) (\(now)). \(owner) respondió "publica" en Telegram: publica en su LinkedIn \
-            EXACTAMENTE el texto de linkedin/borrador.md, según tus instrucciones. \(browser)
+            EXACTAMENTE el texto de linkedin/borrador.md con las imágenes de linkedin/laminas/ (los .png, en orden), \
+            según tus instrucciones. \(browser)
             """
         case .portalScanJobs, .portalScanFreelance:
             let agent: AgentKind = batch.mode == .portalScanJobs ? .jobs : .freelance
@@ -101,7 +103,7 @@ enum AgentPrompts {
         case .prospecting: return "buscando empresas y negocios (desde \(hour))"
         case .prospectingSend: return "enviando correos aprobados (desde \(hour))"
         case .social: return "buscando en redes (desde \(hour))"
-        case .linkedInDraft: return "escribiendo el borrador de LinkedIn (desde \(hour))"
+        case .linkedInDraft: return "preparando la publicación con imágenes (desde \(hour))"
         case .linkedInPublish: return "publicando en LinkedIn (desde \(hour))"
         case .jobs: return "haciendo \(count) postulaciones (desde \(hour))"
         case .freelance: return "haciendo \(count) propuestas (desde \(hour))"
