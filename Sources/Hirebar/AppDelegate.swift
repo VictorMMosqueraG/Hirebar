@@ -32,7 +32,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         popover.behavior = .transient
         popover.delegate = self
         popover.animates = true
-        popover.contentViewController = NSHostingController(rootView: PanelView(model: panel))
+        let host = NSHostingController(rootView: PanelView(model: panel))
+        host.sizingOptions = [.preferredContentSize]
+        popover.contentViewController = host
 
         statusItem.button?.target = self
         statusItem.button?.action = #selector(statusItemClicked)

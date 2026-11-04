@@ -7,7 +7,7 @@
 - Comandos de Telegram `logro`, `trabajo`, `habilidad`, `habilidades` y `hv`.
 - Tarea `perfil`: Claude actualiza el perfil y escribe una hoja de vida HTML por variante; la app crea los PDF con Chrome sin ventana y los manda por Telegram.
 - Agentes independientes (Empleo, Freelance, Clientes, Contenido, Perfil y Analista), cada uno con su archivo `agentes/<id>.json`: prendido, envío automático, frecuencia de búsqueda, cupo diario y tareas con horario propio.
-- Panel en SwiftUI al hacer clic en el maletín: tarjetas por agente agrupadas en Buscar trabajo, Conseguir clientes y Tú, con ícono, estado, próxima ejecución, números de la semana, interruptor, envío automático y Correr ahora. El clic derecho abre el menú clásico.
+- Panel al hacer clic en el maletín: lista compacta de agentes agrupada en Buscar trabajo, Conseguir clientes y Tú, con estado, próxima ejecución e interruptor. Al tocar un agente se abre su detalle (números de la semana, envío automático, Correr ahora, portales y horario). El clic derecho abre el menú clásico.
 - Menú con un submenú por agente y comandos `agentes`, `agente <nombre> on/off`, `corre <nombre>` y `auto <agente> si/no`.
 - El informe del domingo solo analiza: se quitan los ajustes propuestos y el modo `ajustes`.
 - Borradores de LinkedIn martes y jueves.

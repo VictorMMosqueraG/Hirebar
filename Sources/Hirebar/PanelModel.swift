@@ -90,22 +90,27 @@ final class PanelModel: ObservableObject {
         switch kind {
         case .jobs: status = "Búsqueda: \(JobRadar.shared.status)"
         case .freelance: status = "Búsqueda: \(FreelanceRadar.shared.status)"
-        case .profile: status = "\(Profile.load().cvVariants.count) hojas de vida · escribe \"logro\" en Telegram"
-        default: status = agent.purpose
+        case .profile: status = "\(Profile.load().cvVariants.count) hojas de vida"
+        case .clients: status = agent.tasks.first.map { "Prospección: \($0.scheduleText)" } ?? agent.purpose
+        case .content: status = agent.tasks.first.map { "Borradores: \($0.scheduleText)" } ?? agent.purpose
+        case .analyst: status = agent.tasks.first.map { "Análisis: \($0.scheduleText)" } ?? agent.purpose
         }
-        if working { status = "Claude: \(Controller.shared.status)" }
+        if working { status = Controller.shared.status.prefix(1).uppercased() + Controller.shared.status.dropFirst() }
         let next: String
         if !agent.enabled {
-            next = "Apagado"
+            next = "apagado"
+        } else if working {
+            next = "trabajando"
         } else if let date = Scheduler.shared.nextRun(of: kind) {
-            next = "Próxima \(TextTools.countdown(date))"
+            next = TextTools.countdown(date)
         } else {
-            next = "Cuando se lo pidas"
+            next = "a pedido"
         }
         var stats = WeeklyStats.lines(for: kind)
         if kind == .freelance {
             stats += ["Workana \(Quotas.describe("workana"))", "Freelancer \(Quotas.describe("freelancer"))"]
         }
+        if !stats.isEmpty && [.jobs, .freelance, .clients].contains(kind) { stats[0] = "Esta semana: " + stats[0] }
         let ids = kind == .jobs ? Config.jobSources : kind == .freelance ? Config.freelanceSources : []
         return AgentCardData(id: kind, name: agent.name, purpose: agent.purpose, status: status, next: next,
                              enabled: agent.enabled, autoApprove: agent.autoApprove, working: working, stats: stats,

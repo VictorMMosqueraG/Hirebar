@@ -7,23 +7,23 @@ Hirebar es una app para la barra de menú de macOS pensada para desarrolladores 
 Un clic en el maletín abre el panel; clic derecho abre el menú clásico.
 
 ```
-┌──────────────────────────────────────────────────┐
-│ 💼 Hirebar            ● Claude: en espera  ✈ Telegram │
-├──────────────────────────────────────────────────┤
-│ BUSCAR TRABAJO                                   │
-│ [💼] Empleo     Activo            (on)          │
-│      Búsqueda: 10:30, nada nuevo                 │
-│      3 postuladas · 1 respuesta                  │
-│      🕒 Próxima en 6 min   ☑ Automático  Correr ahora ⋯ │
-│ [💻] Freelance  Trabajando        (on)          │
-│ CONSEGUIR CLIENTES                               │
-│ [🏢] Clientes   ·  [📣] Contenido               │
-│ TÚ                                               │
-│ [🪪] Perfil     ·  [📊] Analista                │
-├──────────────────────────────────────────────────┤
-│ Informes · Registro · Datos                  ⚙︎  │
-└──────────────────────────────────────────────────┘
+Hirebar                                   ✈
+● Claude en espera
+
+Buscar trabajo
+  💼 Empleo       Búsqueda: 10:30, nada nuevo     en 5 min   (on)
+  💻 Freelance    Búsqueda: 10:42, 2 avisados     en 18 min  (on)
+Conseguir clientes
+  🏢 Clientes     Prospección: hábiles · 7 a. m.  en 19 h    (on)
+  📣 Contenido    Borradores: mar, jue · 9 a. m.  en 21 h    (on)
+Tú
+  🪪 Perfil       3 hojas de vida                 a pedido   (on)
+  📊 Analista     Análisis: dom · 6 p. m.         en 4 d     (on)
+──────────────────────────────────────────────────────────────
+  📄  ☰  📁                                                ⚙︎
 ```
+
+Al tocar un agente se abre su detalle: números de la semana, envío automático, Correr ahora y un menú con portales, horario y configuración.
 
 ## Qué hace
 
