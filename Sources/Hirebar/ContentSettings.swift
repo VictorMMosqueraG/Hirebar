@@ -46,6 +46,7 @@ struct ContentAccountSection: View {
             TextField("De qué habla y para quién", text: $account.focus, axis: .vertical)
                 .lineLimit(2...5)
             LabeledContent("Días") { DaysPicker(days: $account.days) }
+            Toggle("También un video corto (Reel o Short)", isOn: $account.video)
 
             Picker("Paleta", selection: preset) {
                 Text("Personalizada").tag("")
@@ -66,7 +67,7 @@ struct ContentAccountSection: View {
         } header: {
             Label(account.title, systemImage: account.network == .instagram ? "camera" : "person.crop.rectangle")
         } footer: {
-            Text("La IA usa estos colores y este estilo en cada imagen. Al escoger una paleta se llenan los colores y el estilo; después puedes cambiarlos.")
+            Text("La IA usa estos colores y este estilo en cada imagen. Al escoger una paleta se llenan los colores y el estilo; después puedes cambiarlos. Con el video prendido llega también un video vertical de 15 a 30 segundos.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

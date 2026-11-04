@@ -74,11 +74,13 @@ public struct ContentAccount: Codable, Identifiable, Equatable, Sendable {
     public var palette: ContentPalette
     /// Días en que se prepara publicación sola (lun, mar, mie, jue, vie, sab, dom, todos, habiles).
     public var days: [String]
+    /// Además del carrusel, un video vertical corto (Reel o Short).
+    public var video: Bool
 
     public init(id: String, enabled: Bool = true, network: ContentNetwork = .linkedin, name: String = "",
                 tagline: String = "", handle: String = "", focus: String = ContentAccount.defaultFocus,
                 style: String = PalettePreset.standard.style, palette: ContentPalette = PalettePreset.standard.palette,
-                days: [String] = ["mar", "jue"]) {
+                days: [String] = ["mar", "jue"], video: Bool = false) {
         self.id = id
         self.enabled = enabled
         self.network = network
@@ -89,6 +91,7 @@ public struct ContentAccount: Codable, Identifiable, Equatable, Sendable {
         self.style = style
         self.palette = palette
         self.days = days
+        self.video = video
     }
 
     public init(from decoder: Decoder) throws {
@@ -104,6 +107,7 @@ public struct ContentAccount: Codable, Identifiable, Equatable, Sendable {
         style = try c.decodeIfPresent(String.self, forKey: .style) ?? base.style
         palette = try c.decodeIfPresent(ContentPalette.self, forKey: .palette) ?? base.palette
         days = try c.decodeIfPresent([String].self, forKey: .days) ?? base.days
+        video = try c.decodeIfPresent(Bool.self, forKey: .video) ?? base.video
     }
 
     public static let defaultFocus = "Consejos de tecnología para negocios, mitos del software, noticias de la semana y buenas prácticas para desarrolladores. Para dueños de negocio, emprendedores y otros desarrolladores."
@@ -116,6 +120,8 @@ public struct ContentAccount: Codable, Identifiable, Equatable, Sendable {
     public var folder: URL { Paths.content.appendingPathComponent(id, isDirectory: true) }
     public var slides: URL { folder.appendingPathComponent("laminas", isDirectory: true) }
     public var draft: URL { folder.appendingPathComponent("borrador.md") }
+    /// Escenas del video (HTML de 1080×1920), su guion y el video armado (reel.mp4).
+    public var videoFolder: URL { folder.appendingPathComponent("video", isDirectory: true) }
     public var changes: URL { folder.appendingPathComponent("cambios.txt") }
 
     /// Ruta relativa al workspace, para indicársela a la IA.

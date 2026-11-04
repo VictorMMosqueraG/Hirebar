@@ -154,6 +154,7 @@ Ajustes → **Cuentas de contenido**. Agrega una cuenta por cada perfil donde qu
 - **Nombre en las imágenes**, **línea bajo el nombre** y **usuario**: la firma de cada imagen. Si alguien más baja el repo, pone aquí su propio nombre.
 - **De qué habla y para quién**: el enfoque de los temas.
 - **Días**: cuándo se prepara la publicación sola (a la hora de la tarea del agente Contenido).
+- **También un video corto (Reel o Short)**: además del carrusel llega a Telegram un video vertical de 15 a 30 segundos sobre el mismo tema. Hirebar lo arma en tu Mac sin instalar nada; no lleva sonido, la música se pone al publicar. Con `publica <cuenta>` se sube el carrusel y el video aparte.
 - **Paleta**: escoge una lista (por ejemplo, "Negro y naranja") o pon tus colores en hexadecimal. **Estilo de las imágenes** describe en palabras cómo se ven (letras, detalles). La vista previa muestra cómo quedan.
 
 Quedan guardadas en `workspace/contenido/cuentas.json`.

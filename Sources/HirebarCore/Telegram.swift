@@ -147,6 +147,22 @@ public final class Telegram: @unchecked Sendable {
         }
     }
 
+    public func sendVideo(_ file: URL, caption: String, chatId: Int64, completion: (() -> Void)? = nil) {
+        guard let token = currentToken(),
+              let url = URL(string: "https://api.telegram.org/bot\(token)/sendVideo") else {
+            completion?()
+            return
+        }
+        let fields = ["chat_id": String(chatId), "caption": String(caption.prefix(1000)), "supports_streaming": "true"]
+        DispatchQueue.global(qos: .utility).async {
+            let result = Net.postMultipart(url, fields: fields, fileField: "video", file: file, timeout: 300)
+            if (result?["ok"] as? Bool) != true {
+                Log.write("Telegram: no se pudo enviar el video \(file.lastPathComponent) (\(result?["description"] ?? "sin respuesta"))")
+            }
+            DispatchQueue.main.async { completion?() }
+        }
+    }
+
     public func answerCallback(_ id: String, text: String? = nil) {
         var params: [String: Any] = ["callback_query_id": id]
         if let text { params["text"] = text }

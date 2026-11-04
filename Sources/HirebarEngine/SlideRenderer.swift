@@ -16,6 +16,12 @@ public enum SlideRenderer {
             try? fm.moveItem(at: account.slides, to: previous)
         }
         try? fm.createDirectory(at: account.slides, withIntermediateDirectories: true)
+        let previousVideo = account.folder.appendingPathComponent("video-anterior", isDirectory: true)
+        if fm.fileExists(atPath: account.videoFolder.path) {
+            try? fm.removeItem(at: previousVideo)
+            try? fm.moveItem(at: account.videoFolder, to: previousVideo)
+        }
+        if account.video { try? fm.createDirectory(at: account.videoFolder, withIntermediateDirectories: true) }
     }
 
     static func pages(in folder: URL) -> [URL] {
@@ -49,7 +55,8 @@ public enum SlideRenderer {
         }
     }
 
-    static func shoot(_ source: URL, to target: URL, chrome: String, scratch: URL) -> Bool {
+    static func shoot(_ source: URL, to target: URL, chrome: String, scratch: URL,
+                      width: Int = SlideRenderer.width, height: Int = SlideRenderer.height) -> Bool {
         try? FileManager.default.removeItem(at: target)
         let process = Process()
         process.executableURL = URL(fileURLWithPath: chrome)

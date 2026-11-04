@@ -115,6 +115,7 @@ enum AgentPrompts {
         De qué habla y para quién: \(account.focus)
         Paleta: fondo \(p.background), superficie \(p.surface), acento \(p.accent), texto \(p.text), texto secundario \(p.muted)
         Estilo de las imágenes: \(account.style)
+        Video corto: \(account.video ? "SÍ. Además del carrusel, prepara un video vertical (sección 5 de tus instrucciones) en \(account.relativeFolder)/video/." : "no")
         """
     }
 

@@ -282,15 +282,29 @@ public final class Controller {
         let publish = several ? "publica \(account.id)" : "publica"
         let change = several ? "post \(account.id) cambia <qué>" : "post cambia <qué>"
         let skip = several ? "post \(account.id) salta" : "post salta"
+        let ask = "¿Lo subo a \(account.title)? Responde \"\(publish)\" para subirlo tal cual, \"\(change)\" para ajustarlo o \"\(skip)\" para no publicarlo."
         SlideRenderer.renderAll(account) { [weak self] made, failed in
+            var notes: [String] = []
+            if made.isEmpty {
+                notes.append("Esta vez no salieron imágenes (\(AI.name) no dejó las láminas o Chrome no pudo convertirlas).")
+            } else if failed > 0 {
+                notes.append("\(failed) lámina(s) no se pudieron convertir.")
+            }
             Notifier.sendPhotos(made, caption: "\(account.title): imágenes de la publicación (\(made.count))") {
-                var note = ""
-                if made.isEmpty {
-                    note = "Esta vez no salieron imágenes (\(AI.name) no dejó las láminas o Chrome no pudo convertirlas). "
-                } else if failed > 0 {
-                    note = "\(failed) lámina(s) no se pudieron convertir. "
+                guard account.video else {
+                    self?.reply((notes + [ask]).joined(separator: " "))
+                    return
                 }
-                self?.reply(note + "¿Lo subo a \(account.title)? Responde \"\(publish)\" para subirlo tal cual, \"\(change)\" para ajustarlo o \"\(skip)\" para no publicarlo.")
+                ReelRenderer.render(account) { video, problem in
+                    guard let video else {
+                        notes.append("No salió el video: \(problem ?? "sin detalle").")
+                        self?.reply((notes + [ask]).joined(separator: " "))
+                        return
+                    }
+                    Notifier.sendVideo(video, caption: "\(account.title): video corto (Reel)") {
+                        self?.reply((notes + [ask + " El video se sube junto con las imágenes."]).joined(separator: " "))
+                    }
+                }
             }
         }
     }
