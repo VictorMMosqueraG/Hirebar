@@ -184,7 +184,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         NSWorkspace.shared.open(Paths.log)
     }
 
-    private func configureTelegram() {
+    func configureTelegram() {
         NSApp.activate(ignoringOtherApps: true)
         let alert = NSAlert()
         alert.messageText = "Bot de Telegram de Hirebar"
@@ -217,7 +217,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         info("Guardado. Ahora abre tu bot en Telegram desde el celular y envíale /start.")
     }
 
-    private func sendTest() {
+    func sendTest() {
         guard Notifier.canUseTelegram else {
             info("Primero configura el bot y envíale /start desde tu celular.")
             return
@@ -225,7 +225,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         Notifier.tell("Aviso de prueba: tu celular ya recibe Hirebar.\n\n" + Controller.shared.statusReport())
     }
 
-    private func forgetChat() {
+    func forgetChat() {
         var config = Config.load()
         config.chatId = 0
         config.save()

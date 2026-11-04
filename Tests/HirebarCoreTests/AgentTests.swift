@@ -65,3 +65,15 @@ final class AgentTests: XCTestCase {
         XCTAssertEqual(AgentKind.parse("Análisis"), .analyst)
     }
 }
+
+final class WeeklyStatsTests: XCTestCase {
+    func testReadsAgentMetrics() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("metricas-\(UUID().uuidString).json")
+        let json = #"{"2026-S45": {"freelance": {"enviadas": 4, "leidas": 2, "respuestas": 0}, "prospeccion": {"enviados_empresas": 1, "enviados_negocios": 20}}}"#
+        try Data(json.utf8).write(to: url)
+        XCTAssertEqual(WeeklyStats.lines(for: .freelance, week: "2026-S45", source: url), ["4 enviadas", "2 leídas"])
+        XCTAssertEqual(WeeklyStats.lines(for: .clients, week: "2026-S45", source: url), ["21 correos"])
+        XCTAssertEqual(WeeklyStats.lines(for: .jobs, week: "2026-S45", source: url), ["0 postuladas"])
+        XCTAssertEqual(WeeklyStats.lines(for: .content, week: "2026-S45", source: url), [])
+    }
+}

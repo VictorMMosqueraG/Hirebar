@@ -18,6 +18,7 @@ public final class Controller {
     private var lastAuthAlert: Date?
 
     public var isIdle: Bool { running == nil && queue.isEmpty }
+    public var runningAgent: AgentKind? { runningMode.map(AgentKind.owner) }
 
     public func start() {
         if watchdog == nil {

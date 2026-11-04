@@ -4,19 +4,25 @@
 
 Hirebar es una app para la barra de menú de macOS pensada para desarrolladores en Latinoamérica que buscan empleo remoto y proyectos freelance al mismo tiempo. Revisa los portales cada pocos minutos, filtra con tu perfil y te avisa por Telegram. Cuando respondes "si", o si activaste el envío automático, [Claude Code](https://claude.com/claude-code) abre tu Chrome, analiza cada oportunidad, redacta la propuesta o llena la postulación y te cuenta qué hizo.
 
+Un clic en el maletín abre el panel; clic derecho abre el menú clásico.
+
 ```
-💼 ●
-├── Empleo: 10:30, nada nuevo · próxima en 6 min        ▸  prendido · envío automático · portales · tareas · correr ahora
-├── Freelance: 10:42, 2 avisado(s) · próxima en 18 min  ▸  prendido · envío automático · portales · cupos · tareas
-├── Clientes · próxima en 20 h                          ▸  prendido · envío automático · tareas · correr ahora
-├── Contenido · próxima en 1 d 22 h                     ▸  …
-├── Perfil                                              ▸  regenerar hojas de vida
-├── Analista · próxima en 4 d 7 h                       ▸  …
-├── Telegram: conectado a tu chat
-├── Claude: haciendo 2 propuestas (desde 10:43)
-├── Abrir informes · Ver registro · Abrir carpeta de datos
-├── Abrir al iniciar sesión
-└── Salir de Hirebar
+┌──────────────────────────────────────────────────┐
+│ 💼 Hirebar            ● Claude: en espera  ✈ Telegram │
+├──────────────────────────────────────────────────┤
+│ BUSCAR TRABAJO                                   │
+│ [💼] Empleo     Activo            (on)          │
+│      Búsqueda: 10:30, nada nuevo                 │
+│      3 postuladas · 1 respuesta                  │
+│      🕒 Próxima en 6 min   ☑ Automático  Correr ahora ⋯ │
+│ [💻] Freelance  Trabajando        (on)          │
+│ CONSEGUIR CLIENTES                               │
+│ [🏢] Clientes   ·  [📣] Contenido               │
+│ TÚ                                               │
+│ [🪪] Perfil     ·  [📊] Analista                │
+├──────────────────────────────────────────────────┤
+│ Informes · Registro · Datos                  ⚙︎  │
+└──────────────────────────────────────────────────┘
 ```
 
 ## Qué hace
@@ -101,7 +107,7 @@ Todo está en `~/Library/Application Support/Hirebar/`.
 
 ```
 ┌──────────────────────────────────────────────────┐
-│ 1. Hirebar (app)        AppKit                    │  ícono, menú
+│ 1. Hirebar (app)        AppKit + SwiftUI          │  ícono, panel, menú
 ├──────────────────────────────────────────────────┤
 │ 2. HirebarEngine        sin interfaz              │  radares, horarios, comandos, Claude
 ├──────────────────────────────────────────────────┤
@@ -113,7 +119,7 @@ Todo está en `~/Library/Application Support/Hirebar/`.
 
 ```
 Sources/
-├── Hirebar/            capa 1: main, AppDelegate, StatusMenu, StatusIcon
+├── Hirebar/            capa 1: main, AppDelegate, PanelView, PanelModel, StatusMenu, StatusIcon
 ├── HirebarEngine/      capa 2: FreelanceRadar, JobRadar, Scheduler, Controller, Commands, ClaudeCLI, AgentPrompts, CVRenderer
 ├── HirebarSources/     capa 3: ListingSource, un *Source por portal, FreelanceClassifier, JobScreener
 └── HirebarCore/        capa 4: Paths, Config, Agents, Profile, SearchProfile, Models, BatchStore, Quotas, Metrics, Telegram…
