@@ -53,6 +53,19 @@ enum AgentPrompts {
             Publicar LinkedIn \(batch.id) (\(now)). \(owner) respondió "publica" en Telegram: publica en su LinkedIn \
             EXACTAMENTE el texto de linkedin/borrador.md, según tus instrucciones. \(browser)
             """
+        case .portalScanJobs, .portalScanFreelance:
+            let agent: AgentKind = batch.mode == .portalScanJobs ? .jobs : .freelance
+            let portals = PortalStore.active(for: agent).enumerated().map { index, portal in
+                "\(index + 1). \(portal.name): \(portal.url)" + (portal.notes.isEmpty ? "" : "\n   Indicaciones: \(portal.notes)")
+            }.joined(separator: "\n")
+            let what = agent == .jobs ? "vacantes" : "proyectos freelance"
+            return """
+            Revisión de portales \(batch.id) (\(now)). Revisa estos portales que agregó \(owner) y busca \(what) recientes \
+            que encajen con su perfil, según tus instrucciones. NO postules ni envíes nada: solo deja lo encontrado en \
+            \(PortalStore.findingsURL.lastPathComponent). Si no hay nada nuevo, responde solo \(Controller.noNewsMarker). \(browser)
+
+            \(portals)
+            """
         case .profileUpdate:
             let request = (try? String(contentsOf: Paths.workspaceFile(ProfileRequests.fileName), encoding: .utf8))?
                 .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -93,6 +106,8 @@ enum AgentPrompts {
         case .jobs: return "haciendo \(count) postulaciones (desde \(hour))"
         case .freelance: return "haciendo \(count) propuestas (desde \(hour))"
         case .profileUpdate: return "actualizando tu perfil y hojas de vida (desde \(hour))"
+        case .portalScanJobs: return "revisando tus portales de empleo (desde \(hour))"
+        case .portalScanFreelance: return "revisando tus portales freelance (desde \(hour))"
         }
     }
 }

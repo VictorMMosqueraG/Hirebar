@@ -114,7 +114,7 @@ final class PanelModel: ObservableObject {
         return AgentCardData(id: kind, name: agent.name, purpose: agent.purpose, status: status, next: next,
                              enabled: agent.enabled, autoApprove: agent.autoApprove, working: working, stats: stats,
                              sources: ids.map { SourceToggle(id: $0, title: StatusMenu.sourceTitles[$0] ?? $0, on: config.isEnabled($0)) },
-                             schedule: agent.tasks.map { "\($0.mode.rawValue): \($0.scheduleText)" })
+                             schedule: agent.tasks.map { "\($0.mode.title): \($0.scheduleText)" })
     }
 
     static func capitalized(_ text: String) -> String {

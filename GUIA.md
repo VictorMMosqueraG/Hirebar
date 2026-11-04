@@ -34,6 +34,25 @@ Un clic en el maletín de la barra abre el panel. Clic derecho abre el menú cl�
 | Perfil | Mantiene tu perfil y regenera tus hojas de vida. | Cuando se lo pides. | Ver la sección siguiente. |
 | Analista | Te manda los números de la semana de cada agente. No cambia nada. | Domingo, 6 p. m. | Leerlo y decidir qué ajustar. |
 
+## Agregar o quitar portales
+
+Empleo y Freelance traen portales incluidos y aceptan los que tú agregues.
+
+**Portales incluidos** (Empleo: LinkedIn, Get on Board, Computrabajo, elempleo y Magneto; Freelance: Workana y Freelancer). Se revisan solos cada pocos minutos sin usar a Claude. No se pueden borrar, pero sí apagar: **Ajustes → Empleo** (o **Freelance**) → **Portales incluidos**, o en el panel → flecha del agente → **⋯**.
+
+**Tus portales:** cualquier página de empleo o de proyectos (Torre, Indeed, Hireline, Upwork, la página de empleos de una empresa…).
+
+1. En el portal, haz la búsqueda con los filtros que quieras (por ejemplo, "backend", remoto, Colombia) y copia el enlace de la barra del navegador.
+2. **Ajustes → Empleo** (o **Freelance**) → **Tus portales** → **Agregar portal**.
+3. Escribe un nombre, pega el enlace y, si quieres, unas indicaciones (por ejemplo, "ignora las que piden inglés").
+4. **Guardar**.
+
+Claude abre esos enlaces con tu Chrome a las 9 a. m., 1 p. m. y 5 p. m. (tarea **Revisar tus portales**, cambiable en Ajustes). Sirve aunque el portal pida sesión iniciada: solo inicia sesión una vez en tu Chrome. Lo que encuentre te llega a Telegram en la lista de siempre (`si`, `si 1 3`, `no`); con envío automático se procesa solo. Lo que ya te mostró no se repite durante 30 días.
+
+Para quitar uno: el ícono de basura junto al portal y **Guardar**. Para pausarlo sin borrarlo: su interruptor.
+
+Para revisarlos ya: `corre empleo` o `corre freelance` en Telegram.
+
 ## Tu perfil
 
 Todo sale de un solo archivo: `workspace/perfil.json`. De ahí se alimentan:

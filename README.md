@@ -45,7 +45,8 @@ Todo vive en `~/Library/Application Support/Hirebar/`, fuera del repositorio. Ac
 | `config.json` | Portales activos, tu nombre y el chat de Telegram. |
 | `workspace/perfil.json` | Tu perfil: la única fuente de tu experiencia. Claude no inventa nada que no esté aquí. |
 | `workspace/agentes/<agente>.json` | Horario, envío automático, frecuencia y cupo de cada agente. Se edita desde Ajustes. |
-| `workspace/search-profile.json` | Palabras de búsqueda y descartes de cada portal. |
+| `workspace/search-profile.json` | Palabras de búsqueda y descartes de los portales incluidos. |
+| `workspace/portales.json` | Los portales que agregaste tú. Se editan desde Ajustes. |
 | `workspace/instrucciones-*.md` | Las reglas que sigue Claude en cada tarea. Puedes ajustarlas a tu gusto. |
 | `workspace/HV_*.pdf` | Tus hojas de vida generadas. |
 | `workspace/postulaciones.md`, `historial-propuestas.md`, `informes/` | Registro de lo enviado y los análisis semanales. |

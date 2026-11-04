@@ -71,6 +71,10 @@ public final class Controller {
     }
 
     public func runScheduled(_ mode: Mode, manual: Bool = false) {
+        if Scheduler.isIdlePortalScan(mode) {
+            if manual { reply("No tienes portales propios activos. Agrégalos en Ajustes → \(AgentStore.load(AgentKind.owner(of: mode)).name).") }
+            return
+        }
         if runningMode == mode || queue.contains(where: { $0.0.mode == mode }) {
             if manual { reply("Eso ya está en curso.") }
             return
@@ -212,7 +216,12 @@ public final class Controller {
     }
 
     private func report(_ batchId: String, mode: Mode, code: Int32, output: String) {
-        if code == 0 && (mode == .followUp || mode == .social) && output.contains(Self.noNewsMarker) {
+        if code == 0 && (mode == .portalScanJobs || mode == .portalScanFreelance) {
+            offerPortalFindings(mode)
+            if output.contains(Self.noNewsMarker) { return }
+        }
+        if code == 0 && (mode == .followUp || mode == .social || mode == .portalScanJobs || mode == .portalScanFreelance)
+            && output.contains(Self.noNewsMarker) {
             Log.write("\(mode.rawValue): sin novedades")
             if batchId.hasPrefix("gm-") {
                 let summary = output.replacingOccurrences(of: Self.noNewsMarker, with: "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -233,6 +242,35 @@ public final class Controller {
             reply("¿Lo subo a LinkedIn? Responde \"publica\" para subirlo tal cual, \"post cambia <qué>\" para ajustarlo o \"post salta\" para no publicarlo esta semana.")
         default: break
         }
+    }
+
+    static let portalSeenKey = "portals.seen"
+
+    private func offerPortalFindings(_ mode: Mode) {
+        let agent: AgentKind = mode == .portalScanJobs ? .jobs : .freelance
+        let now = Date()
+        var seen = UserDefaults.standard.dictionary(forKey: Self.portalSeenKey) as? [String: Date] ?? [:]
+        seen = seen.filter { now.timeIntervalSince($0.value) < 30 * 86400 }
+        var hits: [Hit] = []
+        for finding in PortalStore.takeFindings() where !finding.url.isEmpty && seen[finding.url] == nil {
+            seen[finding.url] = now
+            let fit: Fit = (finding.encaje ?? "").uppercased().contains("RETO") ? .stretch : .strong
+            let detail = [finding.portal, finding.detalle ?? ""].filter { !$0.isEmpty }.joined(separator: " · ")
+            hits.append(Hit(id: "cp:" + finding.url, platform: finding.portal, fit: fit, title: finding.titulo,
+                            url: finding.url, detail: detail, score: fit.rank))
+        }
+        UserDefaults.standard.set(seen, forKey: Self.portalSeenKey)
+        guard !hits.isEmpty else { return }
+        let target: Mode = agent == .jobs ? .jobs : .freelance
+        let batch = Batch(mode: target, items: hits.sorted(by: Hit.ranked).map(BatchItem.init), status: .pending)
+        BatchStore.upsert(batch)
+        Metrics.bump(target, "avisados", hits.count)
+        let auto = AgentStore.load(agent).autoApprove
+        let noun = agent == .jobs ? "vacante(s)" : "proyecto(s)"
+        Notifier.announce(batch, title: "Tus portales: \(hits.count) \(noun) para ti" + (auto ? " (envío automático)" : ""),
+                          footer: auto ? "Claude ya los está procesando; te aviso al terminar."
+                                       : "Responde \"si\" para que Claude los procese, \"si 1 3\" para elegir o \"no\" para descartar.")
+        if auto { autoApprove(batch) }
     }
 
     private func finishProfileUpdate() {

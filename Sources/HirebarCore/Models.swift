@@ -18,6 +18,8 @@ public enum Mode: String, Codable, CaseIterable, Sendable {
     case linkedInDraft = "linkedin-borrador"
     case linkedInPublish = "linkedin-publicar"
     case profileUpdate = "perfil"
+    case portalScanJobs = "portales-empleo"
+    case portalScanFreelance = "portales-freelance"
 
     public var batchPrefix: String {
         switch self {
@@ -29,6 +31,8 @@ public enum Mode: String, Codable, CaseIterable, Sendable {
         case .prospecting, .prospectingSend: return "p"
         case .followUp: return "g"
         case .profileUpdate: return "h"
+        case .portalScanJobs: return "pe"
+        case .portalScanFreelance: return "pf"
         }
     }
 
@@ -46,6 +50,8 @@ public enum Mode: String, Codable, CaseIterable, Sendable {
         case .linkedInDraft: return "Borrador de LinkedIn"
         case .linkedInPublish: return "Publicar en LinkedIn"
         case .profileUpdate: return "Actualizar perfil y hojas de vida"
+        case .portalScanJobs: return "Revisar tus portales de empleo"
+        case .portalScanFreelance: return "Revisar tus portales freelance"
         }
     }
 }

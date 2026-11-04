@@ -91,7 +91,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         if !tasks.isEmpty {
             menu.addItem(.separator())
             for task in tasks {
-                menu.addItem(label { "\(task.mode.rawValue): \(task.scheduleText)" })
+                menu.addItem(label { "\(task.mode.title): \(task.scheduleText)" })
             }
         }
         menu.addItem(.separator())

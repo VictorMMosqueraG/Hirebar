@@ -22,8 +22,8 @@ public enum AgentKind: String, Codable, CaseIterable, Sendable {
 
     public static func owner(of mode: Mode) -> AgentKind {
         switch mode {
-        case .jobs, .social: return .jobs
-        case .freelance, .followUp: return .freelance
+        case .jobs, .social, .portalScanJobs: return .jobs
+        case .freelance, .followUp, .portalScanFreelance: return .freelance
         case .prospecting, .prospectingSend: return .clients
         case .linkedInDraft, .linkedInPublish: return .content
         case .profileUpdate: return .profile
@@ -144,6 +144,19 @@ public struct AgentSettings: Codable, Sendable {
 
     public var hasSearch: Bool { id == .jobs || id == .freelance }
 
+    public static func portalScanMode(for kind: AgentKind) -> Mode? {
+        switch kind {
+        case .jobs: return .portalScanJobs
+        case .freelance: return .portalScanFreelance
+        default: return nil
+        }
+    }
+
+    public mutating func ensurePortalScanTask() {
+        guard let mode = Self.portalScanMode(for: id), !tasks.contains(where: { $0.mode == mode }) else { return }
+        tasks.append(AgentTask(mode: mode, hours: [9, 13, 17]))
+    }
+
     public func nextTaskStart(after now: Date = Date()) -> Date? {
         tasks.compactMap { $0.nextStart(after: now) }.min()
     }
@@ -155,13 +168,15 @@ public struct AgentSettings: Codable, Sendable {
                                  purpose: "Busca vacantes en portales de empleo, postula y revisa publicaciones en redes.",
                                  enabled: config.jobsOn, autoApprove: config.autoJobs,
                                  searchEveryMinutes: config.jobMinutes, dailyLimit: 20,
-                                 tasks: [AgentTask(mode: .social, hours: [8, 10, 12, 14, 16, 18, 20])])
+                                 tasks: [AgentTask(mode: .social, hours: [8, 10, 12, 14, 16, 18, 20]),
+                                         AgentTask(mode: .portalScanJobs, hours: [9, 13, 17])])
         case .freelance:
             return AgentSettings(id: .freelance, name: "Freelance",
                                  purpose: "Busca proyectos en portales freelance, envía propuestas y hace seguimientos.",
                                  enabled: config.freelanceOn, autoApprove: config.autoFreelance,
                                  searchEveryMinutes: config.freelanceMinutes, dailyLimit: 5,
-                                 tasks: [AgentTask(mode: .followUp, hours: [10, 16], windowHours: 3)])
+                                 tasks: [AgentTask(mode: .followUp, hours: [10, 16], windowHours: 3),
+                                         AgentTask(mode: .portalScanFreelance, hours: [9, 13, 17])])
         case .clients:
             return AgentSettings(id: .clients, name: "Clientes",
                                  purpose: "Busca empresas y negocios que necesitan software y les escribe por correo.",

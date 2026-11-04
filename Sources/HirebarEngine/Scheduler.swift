@@ -40,6 +40,7 @@ public final class Scheduler {
         let now = Date()
         for agent in AgentStore.all() where agent.enabled {
             for task in agent.tasks {
+                if Self.isIdlePortalScan(task.mode) { continue }
                 guard let slot = task.dueSlot(at: now) else { continue }
                 once(Self.key(for: task, day: slot.day, hour: slot.hour)) {
                     Log.write("Programador: \(agent.name) · \(task.mode.rawValue) de las \(slot.hour) h")
@@ -49,6 +50,14 @@ public final class Scheduler {
         }
         cleanUpWeekly(now)
         onChange?()
+    }
+
+    static func isIdlePortalScan(_ mode: Mode) -> Bool {
+        switch mode {
+        case .portalScanJobs: return PortalStore.active(for: .jobs).isEmpty
+        case .portalScanFreelance: return PortalStore.active(for: .freelance).isEmpty
+        default: return false
+        }
     }
 
     private func cleanUpWeekly(_ now: Date) {
@@ -70,6 +79,7 @@ public final class Scheduler {
         case .freelance: search = FreelanceRadar.shared.nextRun
         default: search = nil
         }
-        return [search, agent.nextTaskStart()].compactMap { $0 }.min()
+        let tasks = agent.tasks.filter { !Self.isIdlePortalScan($0.mode) }.compactMap { $0.nextStart(after: Date()) }.min()
+        return [search, tasks].compactMap { $0 }.min()
     }
 }

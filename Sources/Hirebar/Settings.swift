@@ -47,6 +47,7 @@ final class SettingsModel: ObservableObject {
     @Published var agents: [AgentSettings] = []
     @Published var sources: [String: Bool] = [:]
     @Published var skills: [EditableSkill] = []
+    @Published var portals: [CustomPortal] = []
     @Published var selection: SettingsPage? = .agent(.jobs)
     @Published var message: String?
 
@@ -57,11 +58,18 @@ final class SettingsModel: ObservableObject {
         let config = Config.load()
         sources = Dictionary(uniqueKeysWithValues: (Config.jobSources + Config.freelanceSources).map { ($0, config.isEnabled($0)) })
         skills = Profile.load().skills.map { EditableSkill(skill: $0) }
+        portals = PortalStore.load()
         message = nil
     }
 
     func save() {
+        let invalid = portals.filter { !$0.isValid }
+        guard invalid.isEmpty else {
+            message = "Revisa los portales: cada uno necesita nombre y un enlace que empiece por https://"
+            return
+        }
         for var agent in agents {
+            if !portals.filter({ $0.agent == agent.id && $0.enabled }).isEmpty { agent.ensurePortalScanTask() }
             agent.name = agent.name.trimmingCharacters(in: .whitespaces).isEmpty ? AgentSettings.defaults(for: agent.id).name : agent.name
             if let minutes = agent.searchEveryMinutes { agent.searchEveryMinutes = max(15, minutes) }
             if let limit = agent.dailyLimit { agent.dailyLimit = max(0, limit) }
@@ -78,6 +86,7 @@ final class SettingsModel: ObservableObject {
         config.save()
         let result: String
         do {
+            try PortalStore.save(portals)
             try ProfileEditor.saveSkills(skills.map(\.skill))
             result = "Guardado. Aplica desde la próxima búsqueda."
         } catch {
@@ -96,6 +105,19 @@ final class SettingsModel: ObservableObject {
                 guard let self, let index = self.agents.firstIndex(where: { $0.id == kind }) else { return }
                 self.agents[index] = value
             })
+    }
+
+    func portalsBinding(_ kind: AgentKind) -> Binding<[CustomPortal]> {
+        Binding(
+            get: { [weak self] in self?.portals.filter { $0.agent == kind } ?? [] },
+            set: { [weak self] value in
+                guard let self else { return }
+                self.portals = self.portals.filter { $0.agent != kind } + value
+            })
+    }
+
+    func addPortal(_ kind: AgentKind) {
+        portals.append(CustomPortal(name: "", agent: kind, url: "https://"))
     }
 
     func sourceBinding(_ source: String) -> Binding<Bool> {
@@ -215,11 +237,15 @@ struct AgentEditor: View {
                         Toggle(StatusMenu.sourceTitles[source] ?? source, isOn: model.sourceBinding(source))
                     }
                 } header: {
-                    Text("Búsqueda en portales")
+                    Text("Portales incluidos")
                 } footer: {
-                    Text("La búsqueda no usa a Claude: lee las páginas públicas y te avisa lo que encaja con tu perfil.")
+                    Text("Se revisan solos, sin usar a Claude: leen las páginas públicas y te avisan lo que encaja con tu perfil.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+
+                CustomPortalsSection(portals: model.portalsBinding(agent.id)) {
+                    model.addPortal(agent.id)
                 }
             }
 
@@ -377,5 +403,53 @@ struct SkillRow: View {
             .buttonStyle(.borderless)
         }
         .labelsHidden()
+    }
+}
+
+struct CustomPortalsSection: View {
+    @Binding var portals: [CustomPortal]
+    let onAdd: () -> Void
+
+    var body: some View {
+        Section {
+            ForEach($portals) { $portal in
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Toggle("", isOn: $portal.enabled)
+                            .toggleStyle(.switch)
+                            .controlSize(.mini)
+                            .labelsHidden()
+                        TextField("Nombre", text: $portal.name, prompt: Text("Torre"))
+                            .frame(width: 140)
+                        TextField("Enlace de búsqueda", text: $portal.url, prompt: Text("https://torre.ai/search/jobs?q=backend"))
+                        Button {
+                            let id = portal.id
+                            portals.removeAll { $0.id == id }
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(.borderless)
+                        .help("Quitar este portal")
+                    }
+                    TextField("Indicaciones (opcional)", text: $portal.notes,
+                              prompt: Text("Ej.: filtra por remoto y Colombia; ignora las de inglés"))
+                        .font(.caption)
+                    if !portal.isValid {
+                        Text("Falta el nombre o un enlace que empiece por https://")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                }
+                .labelsHidden()
+                .padding(.vertical, 2)
+            }
+            Button("Agregar portal", action: onAdd)
+        } header: {
+            Text("Tus portales")
+        } footer: {
+            Text("Pega el enlace de una búsqueda ya filtrada en el portal que quieras. Claude lo revisa con tu Chrome (sirve aunque pida sesión iniciada) a las horas de la tarea \"Revisar tus portales\" y te manda lo que encuentre en la lista de siempre.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 }
