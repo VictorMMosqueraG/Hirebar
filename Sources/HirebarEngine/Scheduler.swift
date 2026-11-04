@@ -3,13 +3,7 @@ import HirebarCore
 
 public final class Scheduler {
     public static let shared = Scheduler()
-    static let followUpHours = [10, 16]
-    static let followUpWindowHours = 3
-    static let socialHours = 8...20
-    static let prospectingHours = 7..<19
-    static let linkedInHours = 9..<21
-    static let reportHour = 18
-    static let sunday = 1, monday = 2, tuesday = 3, friday = 6
+    static let cleanupHour = 19
 
     public var onChange: (() -> Void)?
     private var timer: Timer?
@@ -24,11 +18,16 @@ public final class Scheduler {
         DispatchQueue.main.asyncAfter(deadline: .now() + 120) { [weak self] in self?.tick() }
     }
 
-    private func dayKey(_ date: Date) -> String {
+    static func dayKey(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: date)
+    }
+
+    static func key(for task: AgentTask, day: Date, hour: Int) -> String {
+        let base = "sched.\(task.mode.rawValue).\(dayKey(day))"
+        return task.hours.count == 1 ? base : "\(base).\(hour)"
     }
 
     private func once(_ key: String, _ action: () -> Void) {
@@ -39,61 +38,38 @@ public final class Scheduler {
 
     private func tick() {
         let now = Date()
-        let calendar = Calendar.current
-        let hour = calendar.component(.hour, from: now)
-        let weekday = calendar.component(.weekday, from: now)
-        let config = Config.load()
-        let today = dayKey(now)
-
-        if config.freelanceOn {
-            for slot in Self.followUpHours where hour >= slot && hour < slot + Self.followUpWindowHours {
-                once("sched.seguimiento.\(today).\(slot)") {
-                    Log.write("Programador: seguimientos de las \(slot) h")
-                    Controller.shared.runScheduled(.followUp)
+        for agent in AgentStore.all() where agent.enabled {
+            for task in agent.tasks {
+                guard let slot = task.dueSlot(at: now) else { continue }
+                once(Self.key(for: task, day: slot.day, hour: slot.hour)) {
+                    Log.write("Programador: \(agent.name) · \(task.mode.rawValue) de las \(slot.hour) h")
+                    Controller.shared.runScheduled(task.mode)
                 }
             }
         }
-        if Self.socialHours.contains(hour) && hour % 2 == 0 && config.jobsOn {
-            once("sched.redes.\(today).\(hour)") {
-                Log.write("Programador: búsqueda en redes de las \(hour) h")
-                Controller.shared.runScheduled(.social)
-            }
-        }
-        if (Self.monday...Self.friday).contains(weekday) && Self.prospectingHours.contains(hour) {
-            once("sched.prospeccion.\(today)") {
-                Log.write("Programador: prospección del día")
-                Controller.shared.runScheduled(.prospecting)
-            }
-        }
-        if weekday == Self.tuesday && Self.linkedInHours.contains(hour) {
-            let week = Metrics.weekKey(now)
-            once("sched.linkedin.\(week)") {
-                Log.write("Programador: borrador de LinkedIn \(week)")
-                Controller.shared.runScheduled(.linkedInDraft)
-            }
-        }
-        let lastSunday = weekday == Self.monday ? now.addingTimeInterval(-86400) : now
-        let closingWeek = Metrics.weekKey(lastSunday)
-        if (weekday == Self.sunday && hour >= Self.reportHour) || weekday == Self.monday {
-            once("sched.informe.\(closingWeek)") {
-                Log.write("Programador: informe semanal \(closingWeek)")
-                Controller.shared.runScheduled(.weeklyReport)
-            }
-        }
-        if ((weekday == Self.sunday && hour >= Self.reportHour + 1) || weekday == Self.monday) && Controller.shared.isIdle {
-            once("sched.limpieza.\(closingWeek)") { Housekeeping.run() }
-        }
+        cleanUpWeekly(now)
         onChange?()
     }
 
-    public var nextFollowUp: Date? {
-        Self.followUpHours.compactMap {
-            Calendar.current.nextDate(after: Date(), matching: DateComponents(hour: $0, minute: 0), matchingPolicy: .nextTime)
-        }.min()
+    private func cleanUpWeekly(_ now: Date) {
+        let calendar = Calendar.current
+        let weekday = calendar.component(.weekday, from: now)
+        let hour = calendar.component(.hour, from: now)
+        let due = (weekday == 1 && hour >= Self.cleanupHour) || weekday == 2
+        guard due, Controller.shared.isIdle else { return }
+        let sunday = weekday == 2 ? now.addingTimeInterval(-86400) : now
+        once("sched.limpieza.\(Metrics.weekKey(sunday))") { Housekeeping.run() }
     }
 
-    public var nextReport: Date? {
-        Calendar.current.nextDate(after: Date(), matching: DateComponents(hour: Self.reportHour, minute: 0, weekday: Self.sunday),
-                                  matchingPolicy: .nextTime)
+    public func nextRun(of kind: AgentKind) -> Date? {
+        let agent = AgentStore.load(kind)
+        guard agent.enabled else { return nil }
+        let search: Date?
+        switch kind {
+        case .jobs: search = JobRadar.shared.nextRun
+        case .freelance: search = FreelanceRadar.shared.nextRun
+        default: search = nil
+        }
+        return [search, agent.nextTaskStart()].compactMap { $0 }.min()
     }
 }

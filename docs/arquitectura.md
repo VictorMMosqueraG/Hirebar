@@ -42,9 +42,44 @@ Radar (cada 20–30 min)
         └─ la respuesta de Claude llega a Telegram
 ```
 
+## Agentes
+
+Hirebar está dividido en agentes independientes. Cada uno tiene su archivo `workspace/agentes/<id>.json` con su horario, su envío automático y sus tareas, y se prende o apaga sin afectar a los demás.
+
+| Agente | Qué hace | Ritmo por defecto |
+|---|---|---|
+| Empleo | busca vacantes, postula y revisa publicaciones en redes | búsqueda cada 30 min · redes cada 2 h de 8 a. m. a 8 p. m. |
+| Freelance | busca proyectos, envía propuestas y hace seguimientos | búsqueda cada 20 min · seguimientos 10 a. m. y 4 p. m. |
+| Clientes | busca empresas y negocios y les escribe por correo | lunes a viernes, 7 a. m. |
+| Contenido | prepara publicaciones; nada se publica sin aprobación | martes y jueves, 9 a. m. |
+| Perfil | actualiza el perfil y regenera las hojas de vida | cuando se lo pides |
+| Analista | análisis semanal con las métricas de cada agente | domingo, 6 p. m. |
+
+Ejemplo de `agentes/clientes.json`:
+
+```json
+{
+  "id": "clientes",
+  "name": "Clientes",
+  "enabled": true,
+  "autoApprove": true,
+  "dailyLimit": 10,
+  "tasks": [
+    { "mode": "prospeccion", "hours": [7], "days": ["habiles"], "windowHours": 12 }
+  ]
+}
+```
+
+- `hours`: horas de inicio (0–23). `days`: `todos`, `habiles` o días (`lun`, `mar`, `mie`, `jue`, `vie`, `sab`, `dom`). `windowHours`: cuántas horas después todavía puede correr si el Mac estaba dormido.
+- `searchEveryMinutes` (Empleo y Freelance): cada cuánto busca en los portales.
+- `autoApprove`: actúa sin esperar tu "si". `dailyLimit`: cupo diario que se le indica a Claude.
+- Los campos que faltan usan el valor por defecto.
+
+Los agentes buscan y programan por su cuenta, pero Claude atiende un trabajo a la vez, porque todos usan el mismo Chrome. Los trabajos esperan en una cola.
+
 ## Modos
 
-Cada modo tiene su playbook `instrucciones-<modo>.md` en la carpeta de datos.
+Cada tarea de un agente es un modo con su playbook `instrucciones-<modo>.md` en la carpeta de datos.
 
 | Modo | Cuándo corre | Qué hace Claude |
 |---|---|---|
@@ -56,8 +91,7 @@ Cada modo tiene su playbook `instrucciones-<modo>.md` en la carpeta de datos.
 | `prospeccion-envio` | "envia correos" o envío automático | envía los correos aprobados |
 | `linkedin-borrador` | martes, 9 a. m. | escribe un borrador de publicación |
 | `linkedin-publicar` | "publica" | publica el borrador aprobado |
-| `semanal` | domingo, 6 p. m. | informe y ajustes propuestos |
-| `ajustes` | "si" a los ajustes | aplica los cambios aprobados |
+| `semanal` | domingo, 6 p. m. | análisis semanal (no cambia nada) |
 | `perfil` | `logro`, `trabajo` o `hv` | actualiza `perfil.json` y `perfil.md` y escribe una hoja de vida HTML por variante; la app crea los PDF |
 
 ## Carpeta de datos
@@ -67,6 +101,7 @@ Cada modo tiene su playbook `instrucciones-<modo>.md` en la carpeta de datos.
 ```
 config.json                 interruptores, chat de Telegram, envío automático, tu nombre
 workspace/                  carpeta de trabajo de Claude
+├── agentes/                un archivo por agente: horario, envío automático y tareas
 ├── perfil.json             tu experiencia, logros, habilidades con nivel y variantes de HV
 ├── perfil.md               lo mismo en texto, para las demás tareas
 ├── hv/                     plantilla y HTML de cada hoja de vida (los PDF quedan en workspace/)

@@ -9,6 +9,7 @@ enum AgentPrompts {
         let now = DateFormatter.localizedString(from: Date(), dateStyle: .medium, timeStyle: .short)
         let week = Metrics.weekKey()
         let browser = "Usa su navegador con las herramientas de Claude in Chrome."
+        let limit = AgentStore.load(AgentKind.owner(of: batch.mode)).dailyLimit.map { " Cupo diario de este agente: \($0)." } ?? ""
         switch batch.mode {
         case .followUp:
             return """
@@ -18,8 +19,8 @@ enum AgentPrompts {
         case .weeklyReport:
             return """
             Informe semanal \(batch.id) (\(now)). Cierra la semana \(week): analiza las métricas y los registros \
-            según tus instrucciones, escribe el informe y deja los ajustes propuestos en ajustes-propuestos.json. \
-            No cambies ningún archivo de configuración: solo propones.
+            de cada agente según tus instrucciones y escribe el informe. Solo analizas: no cambies playbooks, \
+            perfiles ni configuración, y no propongas cambios automáticos; \(owner) decide qué ajustar.
             """
         case .linkedInDraft:
             let note = (try? String(contentsOf: Paths.linkedIn.appendingPathComponent("cambios.txt"), encoding: .utf8))?
@@ -52,13 +53,6 @@ enum AgentPrompts {
             Publicar LinkedIn \(batch.id) (\(now)). \(owner) respondió "publica" en Telegram: publica en su LinkedIn \
             EXACTAMENTE el texto de linkedin/borrador.md, según tus instrucciones. \(browser)
             """
-        case .adjustments:
-            return """
-            Aplicar ajustes \(batch.id) (\(now)). \(owner) aprobó desde Telegram estos ajustes del informe semanal. \
-            Aplícalos según tus instrucciones y confirma qué cambiaste.
-
-            \(list)
-            """
         case .profileUpdate:
             let request = (try? String(contentsOf: Paths.workspaceFile(ProfileRequests.fileName), encoding: .utf8))?
                 .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -72,7 +66,7 @@ enum AgentPrompts {
         case .jobs:
             return """
             Lote \(batch.id) (\(now)). \(owner) respondió SÍ desde Telegram: postúlalo YA a estas vacantes, \
-            sin pedirle más confirmación, siguiendo tus instrucciones (perfil.md y las reglas de empleo). \(browser)
+            sin pedirle más confirmación, siguiendo tus instrucciones (perfil.md y las reglas de empleo). \(browser)\(limit)
 
             \(list)
             """
@@ -80,7 +74,7 @@ enum AgentPrompts {
             return """
             Lote \(batch.id) (\(now)). \(owner) respondió SÍ desde Telegram: analiza la competencia, redacta y ENVÍA YA \
             la propuesta de cada uno de estos proyectos, sin pedirle más confirmación, siguiendo tus instrucciones \
-            (perfil.md y las reglas de propuestas). \(browser)
+            (perfil.md y las reglas de propuestas). \(browser)\(limit)
 
             \(list)
             """
@@ -96,7 +90,6 @@ enum AgentPrompts {
         case .social: return "buscando en redes (desde \(hour))"
         case .linkedInDraft: return "escribiendo el borrador de LinkedIn (desde \(hour))"
         case .linkedInPublish: return "publicando en LinkedIn (desde \(hour))"
-        case .adjustments: return "aplicando \(count) ajuste(s) (desde \(hour))"
         case .jobs: return "haciendo \(count) postulaciones (desde \(hour))"
         case .freelance: return "haciendo \(count) propuestas (desde \(hour))"
         case .profileUpdate: return "actualizando tu perfil y hojas de vida (desde \(hour))"

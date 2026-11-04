@@ -8,7 +8,6 @@ La primera vez que abres Hirebar se copian los de [playbooks/](../playbooks) si 
 
 - **Respuesta final** en texto plano: va directo a tu Telegram.
 - **`SIN_NOVEDADES`** como primera línea en `seguimiento` y `redes` cuando no hubo nada: la app no te molesta.
-- **`ajustes-propuestos.json`** al final del informe semanal: lista de `{"titulo", "detalle"}`. La app la convierte en una lista para aprobar.
 - **`prospeccion/pendientes.json`** con `correos` numerados (`n`). Los de tipo `RESPUESTA` nunca se envían solos.
 - **`cupos.json`** actualizado con lo que muestra cada plataforma, para no buscar donde ya no quedan contactos.
 - **`hv/<id>.html`** por cada elemento de `cvVariants` en la tarea `perfil`. La app los convierte en `<file>.pdf` con Chrome sin ventana y borra `perfil-cambios.txt` si todo salió bien.

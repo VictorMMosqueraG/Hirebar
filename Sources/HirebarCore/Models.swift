@@ -3,7 +3,6 @@ import Foundation
 public enum Fit: String, Codable, Sendable {
     case strong = "ENCAJA"
     case stretch = "RETO"
-    case adjustment = "AJUSTE"
 
     public var rank: Int { self == .strong ? 0 : 1 }
 }
@@ -13,7 +12,6 @@ public enum Mode: String, Codable, CaseIterable, Sendable {
     case jobs = "empleo"
     case followUp = "seguimiento"
     case weeklyReport = "semanal"
-    case adjustments = "ajustes"
     case prospecting = "prospeccion"
     case prospectingSend = "prospeccion-envio"
     case social = "redes"
@@ -25,7 +23,6 @@ public enum Mode: String, Codable, CaseIterable, Sendable {
         switch self {
         case .freelance: return "f"
         case .jobs: return "e"
-        case .adjustments: return "a"
         case .weeklyReport: return "s"
         case .linkedInDraft, .linkedInPublish: return "l"
         case .social: return "r"
@@ -35,7 +32,7 @@ public enum Mode: String, Codable, CaseIterable, Sendable {
         }
     }
 
-    public var hasItems: Bool { self == .freelance || self == .jobs || self == .adjustments }
+    public var hasItems: Bool { self == .freelance || self == .jobs }
 }
 
 public enum BatchStatus: String, Codable, Sendable {

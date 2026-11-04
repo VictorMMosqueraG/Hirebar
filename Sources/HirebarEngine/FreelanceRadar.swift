@@ -10,11 +10,11 @@ public final class FreelanceRadar: Radar {
         super.init(firstDelay: 60, seenKey: "radar.seen", seenDays: 14)
     }
 
-    override var intervalMinutes: Int { Config.load().freelanceMinutes }
+    override var intervalMinutes: Int { AgentStore.load(.freelance).searchEveryMinutes ?? Config.load().freelanceMinutes }
 
     public override func checkNow() {
         let config = Config.load()
-        guard config.freelanceOn else {
+        guard config.freelanceOn, AgentStore.load(.freelance).enabled else {
             setStatus("apagado")
             return
         }
@@ -71,7 +71,7 @@ public final class FreelanceRadar: Radar {
 
         let batch = Batch(mode: .freelance, items: hits.map(BatchItem.init), status: .pending)
         BatchStore.upsert(batch)
-        let auto = Config.load().autoFreelance
+        let auto = AgentStore.load(.freelance).autoApprove
         let title = "Radar freelance: \(hits.count) proyecto(s) para ti" + (auto ? " (envío automático)" : "")
         let footer = auto
             ? "Cupos: \(Quotas.summary())\n\nClaude ya está analizando y enviando las propuestas; te aviso al terminar."

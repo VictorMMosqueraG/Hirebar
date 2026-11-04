@@ -6,22 +6,28 @@ Hirebar es una app para la barra de menú de macOS pensada para desarrolladores 
 
 ```
 💼 ●
-├── Radar freelance: 10:42, 2 avisado(s) · próxima en 18 min   ▸  Workana · Freelancer · cupos
-├── Radar empleo: 10:30, nada nuevo · próxima en 6 min          ▸  LinkedIn · Get on Board · Computrabajo · elempleo · Magneto
-├── Seguimientos e informe                                      ▸  próximos en 5 h 18 min · informe del domingo
+├── Empleo: 10:30, nada nuevo · próxima en 6 min        ▸  prendido · envío automático · portales · tareas · correr ahora
+├── Freelance: 10:42, 2 avisado(s) · próxima en 18 min  ▸  prendido · envío automático · portales · cupos · tareas
+├── Clientes · próxima en 20 h                          ▸  prendido · envío automático · tareas · correr ahora
+├── Contenido · próxima en 1 d 22 h                     ▸  …
+├── Perfil                                              ▸  regenerar hojas de vida
+├── Analista · próxima en 4 d 7 h                       ▸  …
 ├── Telegram: conectado a tu chat
 ├── Claude: haciendo 2 propuestas (desde 10:43)
-├── Ver registro · Abrir carpeta de datos
+├── Abrir informes · Ver registro · Abrir carpeta de datos
 ├── Abrir al iniciar sesión
 └── Salir de Hirebar
 ```
 
 ## Qué hace
 
+Hirebar está dividido en **agentes independientes**, cada uno con su ritmo: Empleo, Freelance, Clientes, Contenido, Perfil y Analista. Cada agente tiene su archivo de configuración y se prende, se apaga o se ajusta sin tocar a los demás.
+
 - **Radar freelance:** Workana y Freelancer. Prioriza lo reciente y con pocas propuestas, respeta los contactos que te quedan y descarta lo que no es para ti.
 - **Radar de empleo:** LinkedIn, Get on Board, Computrabajo, elempleo y Magneto. Antes de avisarte lee la descripción completa y descarta inglés obligatorio, híbrido fuera de tu ciudad, remoto solo para otro país, años de más o stack ajeno.
 - **Telegram:** la lista llega numerada con botones *Sí* / *No*. También funcionan `si 1 3`, `estado`, `buscar`, `informe`, `anota …`, `auto si` y otros. Si no configuras Telegram, los avisos llegan por [ntfy](https://ntfy.sh).
-- **Claude hace el trabajo pesado:** propuestas con precio según la competencia, postulaciones, seguimientos a las 48 h, prospección por correo, borrador semanal de LinkedIn e informe del domingo con ajustes que apruebas desde el celular.
+- **Claude hace el trabajo pesado:** propuestas con precio según la competencia, postulaciones, seguimientos a las 48 h, prospección por correo y borradores de LinkedIn.
+- **Análisis semanal, sin cambios automáticos:** el domingo el Analista entrega los números de cada agente. Tú decides qué ajustar.
 - **Un solo perfil:** tu experiencia, logros y habilidades con nivel (`domino`, `conozco`, `evito`) viven en `perfil.json`. Las habilidades ajustan solas las búsquedas y los filtros.
 - **Hojas de vida al día:** escribes `logro …` o `trabajo …` en Telegram y Claude actualiza tu perfil y regenera una hoja de vida por tecnología (por ejemplo, Node, .NET y Java). Te llegan los PDF.
 - **Sin tocar código:** palabras clave, bloqueos, salario mínimo, años máximos y ciudad en `search-profile.json`. Las reglas para Claude están en playbooks Markdown que puedes editar.
@@ -62,7 +68,8 @@ Después:
 
 | Archivo | Para qué |
 |---|---|
-| `config.json` | Portales activos (`sources`), envío automático (`autoFreelance`, `autoJobs`, `autoEmails`), minutos entre búsquedas, tu nombre (`ownerName`), chat de Telegram y tema de ntfy. Casi todo se cambia desde el menú o con comandos de Telegram. |
+| `config.json` | Portales activos (`sources`), tu nombre (`ownerName`), chat de Telegram y tema de ntfy. |
+| `workspace/agentes/<id>.json` | Un archivo por agente: prendido, envío automático, cada cuánto busca, cupo diario y tareas con sus horarios. Se cambia desde el menú, con comandos de Telegram o a mano. |
 | `workspace/search-profile.json` | Qué busca y qué descarta cada radar. Si un campo falta, se usa el valor por defecto. |
 | `workspace/perfil.json` | Tu experiencia, logros, habilidades con nivel, preferencias y variantes de hoja de vida. Claude no inventa nada que no esté aquí. |
 | `workspace/perfil.md` | La misma información en texto, para las demás tareas. Claude la mantiene igual a `perfil.json`. |
@@ -85,7 +92,10 @@ Todo está en `~/Library/Application Support/Hirebar/`.
 | `hv` | Regenera tus hojas de vida sin cambios. |
 | `post` · `post cambia <qué>` · `post salta` · `publica` | Borrador de LinkedIn. |
 | `envia correos` · `envia correos 1 3` · `no correos` | Correos de prospección del día. |
-| `auto si` · `auto no` · `auto freelance si` · `auto empleo no` · `auto correos si` | Envío automático sin esperar tu "si". |
+| `agentes` | Estado de cada agente. |
+| `agente <nombre> on` · `agente <nombre> off` | Prende o apaga un agente. |
+| `corre <nombre>` | Corre ya las tareas de un agente (por ejemplo, `corre clientes`). |
+| `auto si` · `auto no` · `auto <agente> si` | Envío automático sin esperar tu "si" (sin nombre: Empleo y Freelance). |
 
 ## Arquitectura
 
@@ -104,9 +114,9 @@ Todo está en `~/Library/Application Support/Hirebar/`.
 ```
 Sources/
 ├── Hirebar/            capa 1: main, AppDelegate, StatusMenu, StatusIcon
-├── HirebarEngine/      capa 2: FreelanceRadar, JobRadar, Scheduler, Controller, Commands, ClaudeCLI, AgentPrompts
+├── HirebarEngine/      capa 2: FreelanceRadar, JobRadar, Scheduler, Controller, Commands, ClaudeCLI, AgentPrompts, CVRenderer
 ├── HirebarSources/     capa 3: ListingSource, un *Source por portal, FreelanceClassifier, JobScreener
-└── HirebarCore/        capa 4: Paths, Config, SearchProfile, Models, BatchStore, Quotas, Metrics, Telegram, Notifier…
+└── HirebarCore/        capa 4: Paths, Config, Agents, Profile, SearchProfile, Models, BatchStore, Quotas, Metrics, Telegram…
 playbooks/              instrucciones por defecto para cada tarea de Claude
 templates/              perfil.md, search-profile.json y cupos.json iniciales
 Tests/                  pruebas de las capas 3 y 4
@@ -117,7 +127,7 @@ scripts/                bundle.sh
 - La app solo busca y organiza. Claude solo trabaja cuando hay algo aprobado, con herramientas limitadas (archivos de la carpeta de trabajo, web y Chrome) y un tope de una hora por corrida.
 - Si la sesión de Claude Code se vence, las listas no se pierden: quedan pendientes para reintentar y te llega un aviso.
 
-Más detalle en [docs/arquitectura.md](docs/arquitectura.md). Lo que viene (contenido para redes, portales como archivos, cazador de clientes) está en [docs/hoja-de-ruta.md](docs/hoja-de-ruta.md).
+Más detalle en [docs/arquitectura.md](docs/arquitectura.md). Lo que viene (contenido para redes, portales como archivos, negocios sin web) está en [docs/hoja-de-ruta.md](docs/hoja-de-ruta.md).
 
 ## Uso responsable
 

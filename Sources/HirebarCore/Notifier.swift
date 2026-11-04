@@ -14,12 +14,7 @@ public enum Notifier {
         lines.append(footer)
         let text = lines.joined(separator: "\n")
         if canUseTelegram {
-            let label: String
-            switch batch.mode {
-            case .jobs: label = "Sí, postular a todas"
-            case .adjustments: label = "Sí, aplicar todos"
-            default: label = "Sí, enviar todas"
-            }
+            let label = batch.mode == .jobs ? "Sí, postular a todas" : "Sí, enviar todas"
             Telegram.shared.send(text, chatId: Config.load().chatId,
                                  buttons: [[(label, "si:\(batch.id)"), ("No", "no:\(batch.id)")]]) { id in
                 guard let id, var stored = BatchStore.find(id: batch.id) else { return }

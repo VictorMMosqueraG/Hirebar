@@ -12,11 +12,11 @@ public final class JobRadar: Radar {
         super.init(firstDelay: 300, seenKey: "jobradar.seen", seenDays: 21)
     }
 
-    override var intervalMinutes: Int { Config.load().jobMinutes }
+    override var intervalMinutes: Int { AgentStore.load(.jobs).searchEveryMinutes ?? Config.load().jobMinutes }
 
     public override func checkNow() {
         let config = Config.load()
-        guard config.jobsOn else {
+        guard config.jobsOn, AgentStore.load(.jobs).enabled else {
             setStatus("apagado")
             return
         }
@@ -92,7 +92,7 @@ public final class JobRadar: Radar {
         let title = fits.isEmpty
             ? "Radar empleo: nada de tu fuerte esta hora, pero hay \(hits.count) vacante(s) RETO"
             : "Radar empleo: \(hits.count) vacante(s) para ti"
-        let auto = Config.load().autoJobs
+        let auto = AgentStore.load(.jobs).autoApprove
         Notifier.announce(batch, title: auto ? title + " (postulación automática)" : title,
                           footer: auto
                             ? "Claude ya está revisando cada vacante y postulándote; te aviso al terminar."

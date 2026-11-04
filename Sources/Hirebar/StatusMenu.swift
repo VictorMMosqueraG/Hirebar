@@ -6,72 +6,45 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     static let shared = StatusMenu()
 
     var onRefresh: ((Bool) -> Void)?
-    private let freelanceHeader = NSMenuItem(title: "Radar freelance", action: nil, keyEquivalent: "")
-    private let jobsHeader = NSMenuItem(title: "Radar empleo", action: nil, keyEquivalent: "")
+    private var headers: [(NSMenuItem, AgentKind)] = []
+    private var checks: [(NSMenuItem, () -> Bool)] = []
+    private var labels: [(NSMenuItem, () -> String)] = []
+    private var actions: [() -> Void] = []
     private let telegramHeader = NSMenuItem(title: "Telegram", action: nil, keyEquivalent: "")
-    private let scheduleHeader = NSMenuItem(title: "Seguimientos e informe", action: nil, keyEquivalent: "")
-    private let followUpNext = NSMenuItem(title: "", action: nil, keyEquivalent: "")
-    private let reportNext = NSMenuItem(title: "", action: nil, keyEquivalent: "")
-    private let claudeItem = NSMenuItem(title: "Claude: en espera", action: nil, keyEquivalent: "")
-    private let quotaWorkana = NSMenuItem(title: "", action: nil, keyEquivalent: "")
-    private let quotaFreelancer = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let telegramState = NSMenuItem(title: "", action: nil, keyEquivalent: "")
-    private var toggles: [(NSMenuItem, String)] = []
+    private let claudeItem = NSMenuItem(title: "Claude: en espera", action: nil, keyEquivalent: "")
     private var ticker: Timer?
 
     static let sourceTitles = [
-        "workana": "Buscar en Workana", "freelancer": "Buscar en Freelancer",
+        "workana": "Workana", "freelancer": "Freelancer",
         "linkedin": "LinkedIn", "getonboard": "Get on Board", "computrabajo": "Computrabajo",
         "elempleo": "elempleo", "magneto": "Magneto",
     ]
 
     func install(in menu: NSMenu) {
-        let freelance = NSMenu()
-        Config.freelanceSources.forEach { freelance.addItem(toggle($0)) }
-        freelance.addItem(.separator())
-        quotaWorkana.isEnabled = false
-        quotaFreelancer.isEnabled = false
-        freelance.addItem(quotaWorkana)
-        freelance.addItem(quotaFreelancer)
-        freelance.addItem(.separator())
-        freelance.addItem(action("Buscar proyectos ahora", #selector(freelanceNow)))
-        freelanceHeader.submenu = freelance
-        menu.addItem(freelanceHeader)
+        for kind in AgentKind.allCases {
+            let header = NSMenuItem(title: kind.rawValue, action: nil, keyEquivalent: "")
+            header.submenu = agentMenu(kind)
+            headers.append((header, kind))
+            menu.addItem(header)
+        }
 
-        let jobs = NSMenu()
-        Config.jobSources.forEach { jobs.addItem(toggle($0)) }
-        jobs.addItem(.separator())
-        jobs.addItem(action("Buscar vacantes ahora", #selector(jobsNow)))
-        jobsHeader.submenu = jobs
-        menu.addItem(jobsHeader)
-
-        let schedule = NSMenu()
-        followUpNext.isEnabled = false
-        reportNext.isEnabled = false
-        schedule.addItem(followUpNext)
-        schedule.addItem(reportNext)
-        schedule.addItem(.separator())
-        schedule.addItem(action("Hacer seguimientos ahora", #selector(followUpNow)))
-        schedule.addItem(action("Armar informe semanal ahora", #selector(reportNow)))
-        schedule.addItem(action("Abrir informes", #selector(openReports)))
-        scheduleHeader.submenu = schedule
-        menu.addItem(scheduleHeader)
-
+        menu.addItem(.separator())
         let telegram = NSMenu()
         telegramState.isEnabled = false
         telegram.addItem(telegramState)
         telegram.addItem(.separator())
-        telegram.addItem(action("Configurar bot…", #selector(configureTelegram)))
-        telegram.addItem(action("Enviar aviso de prueba", #selector(sendTest)))
-        telegram.addItem(action("Volver a vincular el chat", #selector(forgetChat)))
+        telegram.addItem(action("Configurar bot…") { [weak self] in self?.configureTelegram() })
+        telegram.addItem(action("Enviar aviso de prueba") { [weak self] in self?.sendTest() })
+        telegram.addItem(action("Volver a vincular el chat") { [weak self] in self?.forgetChat() })
         telegramHeader.submenu = telegram
         menu.addItem(telegramHeader)
 
-        menu.addItem(.separator())
         claudeItem.isEnabled = false
         menu.addItem(claudeItem)
-        menu.addItem(action("Ver registro", #selector(openLog)))
-        menu.addItem(action("Abrir carpeta de datos", #selector(openFolder)))
+        menu.addItem(action("Abrir informes") { Self.open(Paths.reports) })
+        menu.addItem(action("Ver registro") { Self.openLog() })
+        menu.addItem(action("Abrir carpeta de datos") { Self.open(Paths.root) })
         menu.delegate = self
 
         FreelanceRadar.shared.onStatusChange = { [weak self] _ in self?.refresh() }
@@ -83,20 +56,62 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         refresh()
     }
 
+    private func agentMenu(_ kind: AgentKind) -> NSMenu {
+        let menu = NSMenu()
+        let purpose = NSMenuItem(title: AgentStore.load(kind).purpose, action: nil, keyEquivalent: "")
+        purpose.isEnabled = false
+        menu.addItem(purpose)
+        menu.addItem(.separator())
+        menu.addItem(check("Prendido", { AgentStore.load(kind).enabled }) {
+            AgentStore.update(kind) { $0.enabled.toggle() }
+        })
+        if [.jobs, .freelance, .clients].contains(kind) {
+            menu.addItem(check("Envío automático", { AgentStore.load(kind).autoApprove }) {
+                AgentStore.update(kind) { $0.autoApprove.toggle() }
+            })
+        }
+        let sources = kind == .jobs ? Config.jobSources : kind == .freelance ? Config.freelanceSources : []
+        if !sources.isEmpty {
+            menu.addItem(.separator())
+            for source in sources {
+                menu.addItem(check(Self.sourceTitles[source] ?? source, { Config.load().isEnabled(source) }) {
+                    var config = Config.load()
+                    config.setEnabled(source, !config.isEnabled(source))
+                    config.save()
+                })
+            }
+        }
+        if kind == .freelance {
+            menu.addItem(.separator())
+            menu.addItem(label { "Workana: \(Quotas.describe("workana"))" })
+            menu.addItem(label { "Freelancer: \(Quotas.describe("freelancer"))" })
+        }
+        let tasks = AgentStore.load(kind).tasks
+        if !tasks.isEmpty {
+            menu.addItem(.separator())
+            for task in tasks {
+                menu.addItem(label { "\(task.mode.rawValue): \(task.scheduleText)" })
+            }
+        }
+        menu.addItem(.separator())
+        menu.addItem(action(kind == .profile ? "Regenerar hojas de vida" : "Correr ahora") {
+            Controller.shared.runAgentNow(kind)
+        })
+        menu.addItem(action("Editar configuración…") {
+            AgentStore.writeMissingDefaults()
+            NSWorkspace.shared.open(AgentStore.url(for: kind))
+        })
+        return menu
+    }
+
     func menuWillOpen(_ menu: NSMenu) { refresh() }
 
     func refresh() {
-        let config = Config.load()
-        for (item, source) in toggles { item.state = config.isEnabled(source) ? .on : .off }
-        freelanceHeader.title = "Radar freelance: \(FreelanceRadar.shared.status)"
-            + (config.freelanceOn ? " · próxima \(TextTools.countdown(FreelanceRadar.shared.nextRun))" : "")
-        jobsHeader.title = "Radar empleo: \(JobRadar.shared.status)"
-            + (config.jobsOn ? " · próxima \(TextTools.countdown(JobRadar.shared.nextRun))" : "")
+        for (item, kind) in headers { item.title = headerTitle(kind) }
+        for (item, isOn) in checks { item.state = isOn() ? .on : .off }
+        for (item, text) in labels { item.title = text() }
         claudeItem.title = "Claude: \(Controller.shared.status)"
-        quotaWorkana.title = "Workana: \(Quotas.describe("workana"))"
-        quotaFreelancer.title = "Freelancer: \(Quotas.describe("freelancer"))"
-        followUpNext.title = "Seguimientos (10 a. m. y 4 p. m.): \(TextTools.countdown(Scheduler.shared.nextFollowUp))"
-        reportNext.title = "Informe (domingo 6 p. m.): \(TextTools.countdown(Scheduler.shared.nextReport))"
+        let config = Config.load()
         let state: String
         if !Telegram.shared.isConfigured {
             state = "Sin configurar"
@@ -110,43 +125,66 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         onRefresh?(!Controller.shared.isIdle)
     }
 
-    private func toggle(_ source: String) -> NSMenuItem {
-        let item = NSMenuItem(title: Self.sourceTitles[source] ?? source, action: #selector(flip(_:)), keyEquivalent: "")
+    private func headerTitle(_ kind: AgentKind) -> String {
+        let agent = AgentStore.load(kind)
+        guard agent.enabled else { return "\(agent.name): apagado" }
+        var title = agent.name
+        switch kind {
+        case .jobs: title += ": \(JobRadar.shared.status)"
+        case .freelance: title += ": \(FreelanceRadar.shared.status)"
+        default: break
+        }
+        if let next = Scheduler.shared.nextRun(of: kind) { title += " · próxima \(TextTools.countdown(next))" }
+        return title
+    }
+
+    private func register(_ item: NSMenuItem, _ handler: @escaping () -> Void) -> NSMenuItem {
         item.target = self
-        item.tag = toggles.count
-        toggles.append((item, source))
+        item.tag = actions.count
+        actions.append(handler)
         return item
     }
 
-    private func action(_ title: String, _ selector: Selector) -> NSMenuItem {
-        let item = NSMenuItem(title: title, action: selector, keyEquivalent: "")
-        item.target = self
+    private func action(_ title: String, _ handler: @escaping () -> Void) -> NSMenuItem {
+        register(NSMenuItem(title: title, action: #selector(runMenuAction(_:)), keyEquivalent: ""), handler)
+    }
+
+    private func check(_ title: String, _ isOn: @escaping () -> Bool, _ toggle: @escaping () -> Void) -> NSMenuItem {
+        let item = action(title) { [weak self] in
+            toggle()
+            self?.refresh()
+        }
+        checks.append((item, isOn))
         return item
     }
 
-    @objc private func flip(_ sender: NSMenuItem) {
-        guard sender.tag < toggles.count else { return }
-        let source = toggles[sender.tag].1
-        var config = Config.load()
-        let enabled = !config.isEnabled(source)
-        config.setEnabled(source, enabled)
-        config.save()
-        refresh()
-        guard enabled else { return }
-        if Config.freelanceSources.contains(source) { FreelanceRadar.shared.checkNow() } else { JobRadar.shared.checkNow() }
+    private func label(_ text: @escaping () -> String) -> NSMenuItem {
+        let item = NSMenuItem(title: text(), action: nil, keyEquivalent: "")
+        item.isEnabled = false
+        labels.append((item, text))
+        return item
     }
 
-    @objc private func freelanceNow() { FreelanceRadar.shared.checkNow() }
-    @objc private func jobsNow() { JobRadar.shared.checkNow() }
-    @objc private func followUpNow() { Controller.shared.runScheduled(.followUp, manual: true) }
-    @objc private func reportNow() { Controller.shared.runScheduled(.weeklyReport, manual: true) }
+    @objc private func runMenuAction(_ sender: NSMenuItem) {
+        guard sender.tag >= 0 && sender.tag < actions.count else { return }
+        actions[sender.tag]()
+    }
 
-    @objc private func openReports() {
+    private static func open(_ url: URL) {
         Paths.ensure()
-        NSWorkspace.shared.open(Paths.reports)
+        NSWorkspace.shared.open(url)
     }
 
-    @objc private func configureTelegram() {
+    private static func openLog() {
+        let fm = FileManager.default
+        if !fm.fileExists(atPath: Paths.log.path) {
+            try? fm.createDirectory(at: Paths.logs, withIntermediateDirectories: true)
+            fm.createFile(atPath: Paths.log.path, contents: nil)
+        }
+        NSWorkspace.shared.open(Paths.log)
+    }
+
+    private func configureTelegram() {
         NSApp.activate(ignoringOtherApps: true)
         let alert = NSAlert()
         alert.messageText = "Bot de Telegram de Hirebar"
@@ -179,7 +217,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         info("Guardado. Ahora abre tu bot en Telegram desde el celular y envíale /start.")
     }
 
-    @objc private func sendTest() {
+    private func sendTest() {
         guard Notifier.canUseTelegram else {
             info("Primero configura el bot y envíale /start desde tu celular.")
             return
@@ -187,26 +225,12 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         Notifier.tell("Aviso de prueba: tu celular ya recibe Hirebar.\n\n" + Controller.shared.statusReport())
     }
 
-    @objc private func forgetChat() {
+    private func forgetChat() {
         var config = Config.load()
         config.chatId = 0
         config.save()
         refresh()
         info("Listo. El próximo mensaje que reciba el bot (envíale /start) quedará como tu chat.")
-    }
-
-    @objc private func openLog() {
-        let fm = FileManager.default
-        if !fm.fileExists(atPath: Paths.log.path) {
-            try? fm.createDirectory(at: Paths.logs, withIntermediateDirectories: true)
-            fm.createFile(atPath: Paths.log.path, contents: nil)
-        }
-        NSWorkspace.shared.open(Paths.log)
-    }
-
-    @objc private func openFolder() {
-        Paths.ensure()
-        NSWorkspace.shared.open(Paths.root)
     }
 
     func info(_ message: String) {

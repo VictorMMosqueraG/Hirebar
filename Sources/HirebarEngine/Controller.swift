@@ -84,6 +84,8 @@ public final class Controller {
             case .linkedInPublish: reply("Publicando en LinkedIn el borrador que aprobaste; te confirmo al terminar.")
             case .followUp: reply("Revisando seguimientos ahora; te aviso si escribo a algún cliente.")
             case .prospectingSend: reply("Enviando los correos aprobados; te confirmo al terminar.")
+            case .social: reply("Buscando vacantes publicadas en redes; te aviso si encuentro algo.")
+            case .prospecting: reply("Buscando empresas y negocios para escribirles; te mando la lista al terminar.")
             case .profileUpdate: reply("Actualizando tu perfil y tus hojas de vida; te mando los PDF al terminar.")
             default: break
             }
@@ -114,28 +116,7 @@ public final class Controller {
     }
 
     static func noun(for mode: Mode) -> String {
-        switch mode {
-        case .jobs: return "postulaciones"
-        case .adjustments: return "ajustes"
-        default: return "propuestas"
-        }
-    }
-
-    private func offerAdjustments() {
-        let url = Paths.workspaceFile("ajustes-propuestos.json")
-        guard let data = try? Data(contentsOf: url),
-              let list = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return }
-        try? FileManager.default.removeItem(at: url)
-        guard !list.isEmpty else { return }
-        let hits = list.enumerated().map { index, entry in
-            Hit(id: "a\(index + 1)", platform: "Ajuste", fit: .adjustment,
-                title: entry["titulo"] as? String ?? "Ajuste \(index + 1)", url: "",
-                detail: entry["detalle"] as? String ?? "", score: index)
-        }
-        let batch = Batch(mode: .adjustments, items: hits.map(BatchItem.init), status: .pending)
-        BatchStore.upsert(batch)
-        Notifier.announce(batch, title: "Ajustes propuestos para la próxima semana",
-                          footer: "Responde \"si\" para aplicarlos todos, \"si 1 3\" para elegir o \"no\" para dejar todo como está.")
+        mode == .jobs ? "postulaciones" : "propuestas"
     }
 
     private func runNext() {
@@ -182,9 +163,7 @@ public final class Controller {
         runningMode = mode
         runStarted = Date()
         setStatus(AgentPrompts.statusText(for: mode, count: items.count, since: TextTools.shortTime()))
-        if mode == .adjustments {
-            reply("Aplicando \(items.count) ajuste(s). Te confirmo al terminar.")
-        } else if mode == .freelance || mode == .jobs {
+        if mode == .freelance || mode == .jobs {
             reply("Claude empezó: \(items.count) \(Self.noun(for: mode)). Te aviso cuando termine (suele tardar 5–20 min).")
         }
         Log.write("Claude: inicia lote \(batchId) con \(items.count) elemento(s)")
@@ -247,7 +226,6 @@ public final class Controller {
         }
         reply(String(output.suffix(3800)))
         switch mode {
-        case .weeklyReport: offerAdjustments()
         case .prospecting: offerProspectingEmails()
         case .profileUpdate: finishProfileUpdate()
         case .linkedInDraft:
@@ -277,7 +255,7 @@ public final class Controller {
     private func offerProspectingEmails() {
         let pending = Paths.prospecting.appendingPathComponent("pendientes.json")
         guard let list = try? String(contentsOf: pending, encoding: .utf8), list.contains("\"correo\"") else { return }
-        guard Config.load().autoEmails else {
+        guard AgentStore.load(.clients).autoApprove else {
             reply("¿Los envío? Responde \"envia correos\" para todos, \"envia correos 1 3 5\" para elegir o \"no correos\" para no enviar hoy.")
             return
         }

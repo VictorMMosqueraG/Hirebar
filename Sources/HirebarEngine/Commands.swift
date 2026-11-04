@@ -21,7 +21,10 @@ extension Controller {
     habilidad <nombre> <domino|conozco|evito>: cambia una habilidad; afecta búsquedas y filtros al instante
     habilidades: muestra tus habilidades por nivel
     hv: regenera tus hojas de vida sin cambios
-    auto si / auto no: envío automático sin esperar tu "si" (también "auto freelance si", "auto empleo no", "auto correos si")
+    agentes: estado de cada agente (empleo, freelance, clientes, contenido, perfil, analista)
+    agente <nombre> on / off: prende o apaga un agente
+    corre <nombre>: corre ya las tareas de un agente (ej: corre clientes)
+    auto si / auto no: envío automático de empleo y freelance (o "auto <agente> si", ej: "auto clientes si")
     (Puedes responder citando un aviso para elegir cuál lista.)
     """
 
@@ -84,6 +87,12 @@ extension Controller {
             reply("Anotado para el informe del domingo.")
         case "auto", "automatico":
             handleAuto(Array(words.dropFirst()))
+        case "agentes":
+            reply(agentsReport())
+        case "agente":
+            handleAgentSwitch(Array(words.dropFirst()))
+        case "corre", "correr":
+            handleRunNow(rest(of: message.text))
         case "publica", "publicar":
             let draft = Paths.linkedIn.appendingPathComponent("borrador.md")
             guard let draftText = try? String(contentsOf: draft, encoding: .utf8),
@@ -118,10 +127,10 @@ extension Controller {
         """
         Claude: \(status)
         Cupos: \(Quotas.summary())
-        Freelance: \(FreelanceRadar.shared.status) · próxima \(TextTools.countdown(FreelanceRadar.shared.nextRun))
-        Empleo: \(JobRadar.shared.status) · próxima \(TextTools.countdown(JobRadar.shared.nextRun))
-        Seguimientos: próximos \(TextTools.countdown(Scheduler.shared.nextFollowUp))
-        Informe semanal: \(TextTools.countdown(Scheduler.shared.nextReport))
+        Búsqueda freelance: \(FreelanceRadar.shared.status)
+        Búsqueda de empleo: \(JobRadar.shared.status)
+
+        \(agentsReport())
         """
     }
 
@@ -172,7 +181,7 @@ extension Controller {
         BatchStore.upsert(target)
         Metrics.bump(target.mode, "listas_descartadas")
         if let id = target.messageId { Telegram.shared.removeButtons(chatId: chatId, messageId: id) }
-        reply(target.mode == .adjustments ? "Listo, no cambio nada." : "Descartada. Sigo buscando cada hora.")
+        reply("Descartada. Sigo buscando.")
     }
 
     private func handleEmails(verb: String, numbers: [Int]) {
@@ -194,19 +203,66 @@ extension Controller {
     }
 
     private func handleAuto(_ rest: [String]) {
-        let target = ["freelance", "empleo", "correos"].contains(rest.first ?? "") ? rest.first ?? "ambos" : "ambos"
-        var config = Config.load()
+        let named = rest.count > 1 ? AgentKind.parse(rest.dropLast().joined(separator: " ")) : nil
+        let targets: [AgentKind] = named.map { [$0] } ?? [.jobs, .freelance]
         if let value = rest.last, ["si", "on", "no", "off"].contains(value) {
             let on = value == "si" || value == "on"
-            if target == "correos" {
-                config.autoEmails = on
-            } else {
-                if target != "empleo" { config.autoFreelance = on }
-                if target != "freelance" { config.autoJobs = on }
-            }
-            config.save()
+            for kind in targets { AgentStore.update(kind) { $0.autoApprove = on } }
         }
-        reply("Envío automático · freelance: \(config.autoFreelance ? "SÍ" : "no") (busca cada \(config.freelanceMinutes) min) · empleo: \(config.autoJobs ? "SÍ" : "no") (busca cada \(config.jobMinutes) min) · correos: \(config.autoEmails ? "SÍ" : "no").\nCambiar: \"auto si\", \"auto no\", \"auto freelance si\", \"auto empleo no\", \"auto correos si\".")
+        let lines = [AgentKind.jobs, .freelance, .clients].map { kind -> String in
+            let agent = AgentStore.load(kind)
+            return "\(agent.name): \(agent.autoApprove ? "SÍ" : "no")"
+        }
+        reply("Envío automático · " + lines.joined(separator: " · ") + "\nCambiar: \"auto si\", \"auto no\", \"auto empleo no\", \"auto clientes si\".")
+    }
+
+    private func handleAgentSwitch(_ rest: [String]) {
+        guard let value = rest.last, ["on", "off", "si", "no"].contains(value),
+              let kind = AgentKind.parse(rest.dropLast().joined(separator: " ")) else {
+            reply("Escribe: agente <nombre> on / off, por ejemplo: agente clientes off")
+            return
+        }
+        let on = value == "on" || value == "si"
+        AgentStore.update(kind) { $0.enabled = on }
+        reply("\(AgentStore.load(kind).name): \(on ? "prendido" : "apagado").")
+    }
+
+    private func handleRunNow(_ name: String) {
+        guard let kind = AgentKind.parse(name) else {
+            reply("Escribe: corre <empleo | freelance | clientes | contenido | perfil | analista>")
+            return
+        }
+        runAgentNow(kind)
+    }
+
+    public func runAgentNow(_ kind: AgentKind) {
+        let agent = AgentStore.load(kind)
+        switch kind {
+        case .jobs: JobRadar.shared.checkNow()
+        case .freelance: FreelanceRadar.shared.checkNow()
+        default: break
+        }
+        if kind == .profile {
+            runScheduled(.profileUpdate, manual: true)
+        } else {
+            for task in agent.tasks { runScheduled(task.mode, manual: true) }
+        }
+        if agent.tasks.isEmpty && !agent.hasSearch && kind != .profile {
+            reply("\(agent.name) no tiene tareas configuradas.")
+        } else if agent.hasSearch {
+            reply("\(agent.name): buscando ahora.")
+        }
+    }
+
+    public func agentsReport() -> String {
+        AgentStore.all().map { agent in
+            var line = "\(agent.name): \(agent.enabled ? "prendido" : "apagado")"
+            if agent.enabled {
+                if [.jobs, .freelance, .clients].contains(agent.id) { line += " · auto \(agent.autoApprove ? "sí" : "no")" }
+                if let next = Scheduler.shared.nextRun(of: agent.id) { line += " · próxima \(TextTools.countdown(next))" }
+            }
+            return line
+        }.joined(separator: "\n")
     }
 
     private func handlePost(_ raw: String) {
