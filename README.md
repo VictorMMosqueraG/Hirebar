@@ -2,7 +2,7 @@
 
 App para la barra de menú de macOS que busca empleo remoto, proyectos freelance y clientes por ti. Revisa los portales cada pocos minutos, filtra con tu perfil y te avisa por Telegram. Cuando apruebas (o si activas el envío automático), [Claude Code](https://claude.com/claude-code) abre tu Chrome, redacta y envía las propuestas o postulaciones, y te cuenta qué hizo.
 
-Está dividida en agentes independientes, cada uno con su horario: **Empleo, Freelance, Clientes, Contenido, Perfil y Analista**. Cómo se usa cada uno está en la [guía de uso](docs/guia-de-uso.md).
+Está dividida en agentes independientes, cada uno con su horario: **Empleo, Freelance, Clientes, Contenido, Perfil y Analista**. Cómo se usa cada uno está en la [guía de uso](GUIA.md).
 
 ## Requisitos
 
