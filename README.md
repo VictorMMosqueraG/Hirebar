@@ -25,7 +25,9 @@ Tú
 
 Al tocar un agente se abre su detalle: qué hace, números de la semana, envío automático, Correr ahora y un menú con portales, horario y sus ajustes.
 
-**Ajustes…** (en el engranaje del panel) abre una ventana como la de Gatebar: a la izquierda los agentes y tus habilidades; a la derecha un formulario para prenderlos, poner días, horas, frecuencia, portales y cupo diario. No hace falta editar archivos.
+**¿Cómo se usa?** Todo el día a día (cada agente, cómo actualizar tu perfil y tus hojas de vida, comandos y qué hacer si algo falla) está en la [guía de uso](docs/guia-de-uso.md).
+
+**Ajustes** (botón en el pie del panel) abre una ventana como la de Gatebar: a la izquierda los agentes y tus habilidades; a la derecha un formulario para prenderlos, poner días, horas, frecuencia, portales y cupo diario. No hace falta editar archivos.
 
 ## Qué hace
 
@@ -63,6 +65,8 @@ Después:
 2. **Abrir carpeta de datos** → completa `workspace/perfil.json` con tu experiencia real, tus habilidades y tus variantes de hoja de vida (`cvVariants`). Luego escribe `hv` a tu bot para generar `perfil.md` y los PDF.
 3. Ajusta `workspace/search-profile.json` a tu stack (viene con un perfil backend de ejemplo).
 4. Activa **Abrir al iniciar sesión**.
+
+Después sigue la [guía de uso](docs/guia-de-uso.md).
 
 ### Opciones de `bundle.sh`
 

@@ -1,0 +1,151 @@
+# Guía de uso
+
+Cómo se usa Hirebar en el día a día: qué hace cada parte, cómo mantener tu perfil al día y qué hacer si algo falla.
+
+## El panel
+
+Un clic en el maletín de la barra abre el panel. Clic derecho abre el menú clásico con lo mismo en forma de lista.
+
+### Encabezado
+- **Claude en espera / trabajando:** qué está haciendo Claude. Punto verde = libre; naranja = trabajando. Claude hace una cosa a la vez porque todos los agentes usan el mismo Chrome; lo demás espera en fila.
+- **Avión de papel:** Telegram. Azul = conectado; gris = falta configurarlo (engranaje → Configurar bot de Telegram).
+
+### Cada agente
+- **Nombre y descripción:** qué hace.
+- **"en 5 min", "en 19 h", "a pedido", "trabajando":** cuándo vuelve a correr solo.
+- **Interruptor:** lo prende o lo apaga. Apagar uno no afecta a los demás.
+- **Flecha ›:** abre el detalle: estado, números de la semana, casilla **Envío automático**, botón **Correr ahora** y menú **⋯** (portales, horario y ajustes del agente).
+
+### Pie
+- **Informes:** análisis de cada semana.
+- **Registro:** lo que la app hizo, minuto a minuto. Mira aquí cuando algo no corre.
+- **Datos:** tu carpeta (`~/Library/Application Support/Hirebar/`).
+- **Ajustes:** ventana para configurar agentes y habilidades sin editar archivos.
+- **Engranaje:** bot de Telegram, aviso de prueba, abrir al iniciar sesión y salir.
+
+## Los agentes
+
+| Agente | Qué hace | Cuándo | Qué haces tú |
+|---|---|---|---|
+| Empleo | Revisa LinkedIn, Get on Board, Computrabajo, elempleo y Magneto; descarta lo que no encaja y postula. También busca vacantes publicadas en redes. | Búsqueda cada 30 min; redes cada 2 h de 8 a. m. a 8 p. m. | Con envío automático, nada. Sin él, respondes `si`, `si 1 3` o `no` en Telegram. |
+| Freelance | Revisa Workana y Freelancer; analiza la competencia, pone precio, redacta y envía. Hace seguimientos a las 48 h. | Búsqueda cada 20 min; seguimientos 10 a. m. y 4 p. m. | Igual que Empleo. Si un cliente responde, te llega primero: contestas tú. |
+| Clientes | Busca empresas y negocios que necesitan software y les escribe por correo desde tu Gmail. | Lunes a viernes, 7 a. m. | Con envío automático, nada. Sin él, `envia correos`, `envia correos 1 3` o `no correos`. Las respuestas con interés siempre las apruebas tú. |
+| Contenido | Escribe un borrador para tu LinkedIn con un logro real. | Martes y jueves, 9 a. m. | `publica`, `post cambia <qué>` o `post salta`. Nunca publica sin tu aprobación. |
+| Perfil | Mantiene tu perfil y regenera tus hojas de vida. | Cuando se lo pides. | Ver la sección siguiente. |
+| Analista | Te manda los números de la semana de cada agente. No cambia nada. | Domingo, 6 p. m. | Leerlo y decidir qué ajustar. |
+
+## Tu perfil
+
+Todo sale de un solo archivo: `workspace/perfil.json`. De ahí se alimentan:
+- las búsquedas (tus habilidades deciden qué se avisa y qué se descarta),
+- las propuestas y postulaciones (Claude solo usa logros que estén ahí),
+- tus hojas de vida (una por tecnología),
+- los borradores de LinkedIn.
+
+`workspace/perfil.md` es la misma información en texto; Claude lo mantiene igual al JSON. No lo edites a mano.
+
+### Agregar un logro
+En Telegram:
+```
+logro bajé el tiempo de despliegue de 30 a 10 minutos en KoralAT con GitHub Actions
+```
+- Claude lo agrega al trabajo que nombres (si no nombras ninguno, al actual), con verbo en pasado y con las tecnologías que menciones.
+- Si no das un número, no se inventa uno.
+- Regenera tus hojas de vida y te manda los PDF.
+
+Consejo: mándalo apenas pase, con número y tecnología. "Bajé X de A a B con Y" es el formato que mejor funciona.
+
+### Cambiar de trabajo
+```
+trabajo nuevo Backend Senior en Acme desde dic 2026
+```
+Cierra el trabajo actual con esa fecha, crea el nuevo arriba, actualiza tu titular y las reglas que nombraban el trabajo anterior, y regenera las hojas de vida. Para un proyecto como independiente, dilo: `trabajo consultoría para Tienda X desde ene 2027, API de pagos`.
+
+### Habilidades
+```
+habilidad Go conozco
+habilidad Terraform domino
+habilidad PHP evito
+habilidades
+```
+- **Domino:** se busca y cuenta como ENCAJA.
+- **Conozco:** se busca, pero cuenta como RETO (se avisa solo si no hay nada de tu fuerte).
+- **Evito:** se descarta.
+- Aplica desde la búsqueda siguiente, sin pasar por Claude.
+
+También en **Ajustes → Habilidades**: nombre, nivel y "otros nombres" (cómo aparece en los avisos, por ejemplo `node, nodejs`). Pulsa **Guardar**.
+
+### Regenerar las hojas de vida
+`hv` en Telegram o **Regenerar HV** en el detalle de Perfil. Los PDF quedan en `workspace/` con estos nombres y se usan al postular según la vacante:
+- `HV_Victor_Mosquera_Backend_Node.pdf`
+- `HV_Victor_Mosquera_Backend_NET.pdf`
+- `HV_Victor_Mosquera_Backend_Java.pdf`
+
+Son formato ATS (una columna, sin tablas ni imágenes, máximo 2 páginas). Hirebar las convierte a PDF con Google Chrome sin abrir ventana.
+
+### Agregar otra hoja de vida
+En `perfil.json`, dentro de `cvVariants`, agrega un elemento y luego escribe `hv`:
+```json
+{ "id": "cloud", "title": "Cloud / DevOps Engineer", "file": "HV_Victor_Mosquera_Cloud", "focus": ["AWS", "Docker", "Kubernetes", "Terraform"] }
+```
+- `id`: nombre corto, sin espacios.
+- `title`: el titular de esa hoja de vida.
+- `file`: nombre del PDF.
+- `focus`: tecnologías que van primero; los logros con esas tecnologías suben.
+
+### Cambiar datos, estudios o salario
+Por ahora, a mano en `perfil.json`:
+- `person`: nombre, titular, ciudad, correo, teléfono, enlaces, idiomas y estudios.
+- `preferences`: cargos que buscas, modalidad, salario (`copMonthly`, `copMinimum`, `usdMonthly`) y tarifa freelance.
+- `rules`: reglas que Claude debe respetar siempre.
+
+Después de editar, escribe `hv` para que todo quede igual en `perfil.md` y en las hojas de vida. Si el archivo queda con un error de formato, la app lo ignora y lo anota en el **Registro**.
+
+## Ajustes
+
+Panel → **Ajustes**. A la izquierda, los agentes y tus habilidades. Para cada agente:
+- nombre y descripción,
+- prendido y envío automático,
+- "Buscar cada X min" y portales (Empleo y Freelance),
+- cupo diario (máximo de envíos al día que se le indica a Claude),
+- por tarea: días (L M X J V S D), horas (`10, 16`) y hasta cuántas horas tarde puede correr si el Mac estaba dormido.
+
+**Guardar** (⌘S) aplica desde la próxima búsqueda. **Descartar** deshace lo que no guardaste. **Mostrar archivo** te lleva al JSON de ese agente.
+
+## Comandos de Telegram
+
+| Para | Escribe |
+|---|---|
+| Ver cómo va todo | `estado` · `agentes` |
+| Buscar ya | `buscar` · `buscar empleo` · `buscar freelance` |
+| Correr un agente ya | `corre clientes` · `corre contenido` · `corre analista` |
+| Prender o apagar un agente | `agente clientes off` · `agente clientes on` |
+| Envío automático | `auto si` · `auto no` · `auto empleo no` · `auto clientes si` |
+| Aprobar o descartar una lista | `si` · `si 1 3` · `no` (o los botones del mensaje) |
+| Correos del día | `envia correos` · `envia correos 1 3` · `no correos` |
+| LinkedIn | `post` · `post cambia <qué>` · `post salta` · `publica` |
+| Perfil | `logro …` · `trabajo …` · `habilidad <nombre> <nivel>` · `habilidades` · `hv` |
+| Nota para el análisis del domingo | `anota entrevista con Acme el jueves` |
+
+Cualquier otra cosa: el bot responde con la lista completa.
+
+## Si algo falla
+
+| Síntoma | Qué hacer |
+|---|---|
+| Llega "La sesión de Claude Code se venció" | Abre Terminal, escribe `claude` y luego `/login`. Después `si` para reintentar la última lista: no se pierde. |
+| No llegan avisos | Engranaje → Enviar aviso de prueba. Si no llega, Configurar bot de Telegram y envíale `/start` a tu bot. |
+| Un agente no corre a su hora | Mira que esté prendido y su horario en Ajustes. Si el Mac estaba dormido, corre al despertar dentro de su tolerancia. Revisa el **Registro**. |
+| Claude dice que no pudo enviar algo | Revisa que Chrome esté abierto, con la extensión Claude in Chrome y con sesión en ese portal. Hirebar nunca resuelve CAPTCHAs ni escribe contraseñas. |
+| No salen los PDF de la hoja de vida | Hace falta Google Chrome instalado en `/Applications`. El mensaje de Telegram dice cuál falló. |
+| Cambié algo y no se nota | Ajustes y habilidades aplican desde la búsqueda siguiente. Para forzarla: `buscar`. |
+
+## Actualizar Hirebar
+
+```sh
+cd ~/Documents/vm_software/hirebar
+git pull
+scripts/bundle.sh --install
+```
+
+Tus datos no se tocan: viven fuera del repo.
