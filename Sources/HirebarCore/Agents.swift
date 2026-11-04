@@ -89,7 +89,14 @@ public struct AgentTask: Codable, Sendable, Equatable {
     }
 
     public var scheduleText: String {
-        let dayText = days.contains("todos") ? "todos los días" : days.joined(separator: ", ")
+        let dayText: String
+        if days.contains("todos") {
+            dayText = "todos los días"
+        } else if days.contains("habiles") {
+            dayText = "lun a vie"
+        } else {
+            dayText = days.joined(separator: ", ")
+        }
         let hourText = hours.sorted().map { $0 == 12 ? "12 m." : $0 < 12 ? "\($0) a. m." : "\($0 - 12) p. m." }.joined(separator: ", ")
         return "\(dayText) · \(hourText)"
     }

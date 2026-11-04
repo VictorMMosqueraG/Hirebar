@@ -88,14 +88,12 @@ final class PanelModel: ObservableObject {
         let working = running == kind
         var status: String
         switch kind {
-        case .jobs: status = "Búsqueda: \(JobRadar.shared.status)"
-        case .freelance: status = "Búsqueda: \(FreelanceRadar.shared.status)"
+        case .jobs: status = Self.capitalized(JobRadar.shared.status)
+        case .freelance: status = Self.capitalized(FreelanceRadar.shared.status)
         case .profile: status = "\(Profile.load().cvVariants.count) hojas de vida"
-        case .clients: status = agent.tasks.first.map { "Prospección: \($0.scheduleText)" } ?? agent.purpose
-        case .content: status = agent.tasks.first.map { "Borradores: \($0.scheduleText)" } ?? agent.purpose
-        case .analyst: status = agent.tasks.first.map { "Análisis: \($0.scheduleText)" } ?? agent.purpose
+        case .clients, .content, .analyst: status = agent.tasks.first.map { Self.capitalized($0.scheduleText) } ?? agent.purpose
         }
-        if working { status = Controller.shared.status.prefix(1).uppercased() + Controller.shared.status.dropFirst() }
+        if working { status = Self.capitalized(Controller.shared.status) }
         let next: String
         if !agent.enabled {
             next = "apagado"
@@ -116,6 +114,10 @@ final class PanelModel: ObservableObject {
                              enabled: agent.enabled, autoApprove: agent.autoApprove, working: working, stats: stats,
                              sources: ids.map { SourceToggle(id: $0, title: StatusMenu.sourceTitles[$0] ?? $0, on: config.isEnabled($0)) },
                              schedule: agent.tasks.map { "\($0.mode.rawValue): \($0.scheduleText)" })
+    }
+
+    static func capitalized(_ text: String) -> String {
+        text.prefix(1).uppercased() + text.dropFirst()
     }
 
     func toggleEnabled(_ kind: AgentKind) {

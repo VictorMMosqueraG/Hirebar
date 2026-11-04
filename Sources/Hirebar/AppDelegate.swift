@@ -70,8 +70,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         }
         guard let button = statusItem.button else { return }
         panel.refresh()
-        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         NSApp.activate(ignoringOtherApps: true)
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        popover.contentViewController?.view.window?.makeKey()
         let timer = Timer(timeInterval: 5, repeats: true) { [weak self] _ in self?.panel.refresh() }
         RunLoop.main.add(timer, forMode: .common)
         panelTimer = timer

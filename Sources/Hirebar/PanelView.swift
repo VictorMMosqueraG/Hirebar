@@ -38,7 +38,7 @@ struct PanelView: View {
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
         }
-        .frame(width: 320)
+        .frame(width: 340)
     }
 
     private var header: some View {
