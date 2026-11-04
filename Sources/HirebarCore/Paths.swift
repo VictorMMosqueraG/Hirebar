@@ -39,8 +39,7 @@ public enum Paths {
         ensure()
         let fm = FileManager.default
         let pairs: [(String, URL)] = [
-            ("playbooks", workspace),
-            ("templates", workspace),
+            ("inicial", workspace),
         ]
         for (folder, target) in pairs {
             let source = bundled.appendingPathComponent(folder)

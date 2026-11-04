@@ -26,8 +26,10 @@ jobs:
           brew install shellcheck
           shellcheck -s sh scripts/*.sh
 
-      - name: Validate templates
-        run: python3 -m json.tool templates/search-profile.json > /dev/null
+      - name: Validate starting files
+        run: |
+          python3 -m json.tool Resources/inicial/search-profile.json > /dev/null
+          python3 -m json.tool Resources/inicial/perfil.json > /dev/null
 
       - name: Bundle app
         run: scripts/bundle.sh --zip

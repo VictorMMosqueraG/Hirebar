@@ -57,7 +57,7 @@ final class ProfileTests: XCTestCase {
     func testTemplateProfileDecodes() throws {
         let template = URL(fileURLWithPath: #filePath).resolvingSymlinksInPath()
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("templates/perfil.json")
+            .appendingPathComponent("Resources/inicial/perfil.json")
         let profile = try JSONDecoder().decode(Profile.self, from: Data(contentsOf: template))
         XCTAssertFalse(profile.skills.isEmpty)
         XCTAssertEqual(profile.cvVariants.first?.id, "node")

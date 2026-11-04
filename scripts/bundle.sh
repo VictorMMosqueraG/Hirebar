@@ -15,7 +15,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/Hirebar" "$APP/Contents/MacOS/Hirebar"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Contents/Info.plist"
-cp -R playbooks templates "$APP/Contents/Resources/"
+cp -R Resources/inicial "$APP/Contents/Resources/"
 codesign --force --deep --sign - "$APP"
 echo "Built $APP"
 
