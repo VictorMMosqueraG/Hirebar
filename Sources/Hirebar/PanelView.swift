@@ -77,6 +77,9 @@ struct PanelView: View {
             }
             .buttonStyle(.borderless)
             Menu {
+                Button("Ajustes…") { model.editSettings(nil) }
+                Button("Cuentas de contenido…") { model.editContentAccounts() }
+                Divider()
                 Button("Configurar bot de Telegram…") { model.onConfigureTelegram?() }
                 Button("Enviar aviso de prueba") { model.onSendTest?() }
                 Button("Volver a vincular el chat") { model.onForgetChat?() }
@@ -205,6 +208,9 @@ struct AgentRow: View {
                         Section("Horario") {
                             ForEach(agent.schedule, id: \.self) { line in Text(line) }
                         }
+                    }
+                    if agent.id == .content {
+                        Button("Cuentas de contenido…") { model.editContentAccounts() }
                     }
                     Button("Ajustes de \(agent.name)…") { model.editSettings(agent.id) }
                 } label: {

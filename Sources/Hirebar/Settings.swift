@@ -326,6 +326,16 @@ struct AgentEditor: View {
                 }
             }
 
+            if agent.id == .content {
+                Section {
+                    Button("Configurar cuentas de contenido…") { model.selection = .content }
+                } footer: {
+                    Text("Nombre, red, días y colores de cada cuenta (por ejemplo, la de tu empresa y la personal).")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             ForEach(agent.tasks.indices, id: \.self) { index in
                 TaskEditor(task: $agent.tasks[index])
             }

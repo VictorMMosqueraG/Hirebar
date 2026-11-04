@@ -149,6 +149,10 @@ final class PanelModel: ObservableObject {
         onOpenSettings?(kind.map { .agent($0) })
     }
 
+    func editContentAccounts() {
+        onOpenSettings?(.content)
+    }
+
     func toggleLogin() {
         do {
             if SMAppService.mainApp.status == .enabled {
