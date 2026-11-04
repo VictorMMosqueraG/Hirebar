@@ -38,7 +38,7 @@ struct PanelView: View {
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
         }
-        .frame(width: 340)
+        .frame(width: 360)
     }
 
     private var header: some View {
@@ -69,9 +69,14 @@ struct PanelView: View {
             FooterButton(symbol: "list.bullet", help: "Registro") { model.openLog() }
             FooterButton(symbol: "folder", help: "Carpeta de datos") { model.open(Paths.root) }
             Spacer()
+            Button {
+                model.editSettings(nil)
+            } label: {
+                Label("Ajustes", systemImage: "slider.horizontal.3")
+                    .font(.system(size: 11))
+            }
+            .buttonStyle(.borderless)
             Menu {
-                Button("Ajustes…") { model.editSettings(nil) }
-                Divider()
                 Button("Configurar bot de Telegram…") { model.onConfigureTelegram?() }
                 Button("Enviar aviso de prueba") { model.onSendTest?() }
                 Button("Volver a vincular el chat") { model.onForgetChat?() }
@@ -125,13 +130,13 @@ struct AgentRow: View {
                     .frame(width: 18)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(agent.name)
-                        .font(.system(size: 13))
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(agent.enabled ? Color.primary : Color.secondary)
-                    Text(agent.status)
+                    Text(agent.purpose)
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 6)
                 Text(agent.next)
@@ -143,10 +148,13 @@ struct AgentRow: View {
                     .toggleStyle(.switch)
                     .labelsHidden()
                     .controlSize(.mini)
+                Image(systemName: expanded ? "chevron.down" : "chevron.right")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+                    .frame(width: 10)
             }
             .contentShape(Rectangle())
             .onTapGesture { expanded.toggle() }
-            .help(agent.purpose)
 
             if expanded {
                 details
@@ -165,7 +173,7 @@ struct AgentRow: View {
 
     private var details: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(agent.purpose)
+            Text(agent.status)
                 .font(.system(size: 11))
                 .fixedSize(horizontal: false, vertical: true)
             if !agent.stats.isEmpty {

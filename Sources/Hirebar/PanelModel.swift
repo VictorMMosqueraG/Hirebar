@@ -89,10 +89,10 @@ final class PanelModel: ObservableObject {
         let working = running == kind
         var status: String
         switch kind {
-        case .jobs: status = Self.capitalized(JobRadar.shared.status)
-        case .freelance: status = Self.capitalized(FreelanceRadar.shared.status)
-        case .profile: status = "\(Profile.load().cvVariants.count) hojas de vida"
-        case .clients, .content, .analyst: status = agent.tasks.first.map { Self.capitalized($0.scheduleText) } ?? agent.purpose
+        case .jobs: status = "Última búsqueda: \(JobRadar.shared.status)"
+        case .freelance: status = "Última búsqueda: \(FreelanceRadar.shared.status)"
+        case .profile: status = "\(Profile.load().cvVariants.count) hojas de vida · escribe \"logro\" o \"hv\" en Telegram"
+        case .clients, .content, .analyst: status = agent.tasks.first.map { "Corre \($0.scheduleText)" } ?? "Sin horario"
         }
         if working { status = Self.capitalized(Controller.shared.status) }
         let next: String
