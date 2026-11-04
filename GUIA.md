@@ -34,6 +34,23 @@ Un clic en el maletín de la barra abre el panel. Clic derecho abre el menú cl�
 | Perfil | Mantiene tu perfil y regenera tus hojas de vida. | Cuando se lo pides. | Ver la sección siguiente. |
 | Analista | Te manda los números de la semana de cada agente. No cambia nada. | Domingo, 6 p. m. | Leerlo y decidir qué ajustar. |
 
+## Motor de IA
+
+La búsqueda en los portales incluidos no usa IA. La IA hace el trabajo pesado: enviar propuestas, postular, seguimientos, correos, publicaciones y tu perfil. Se elige en **Ajustes → Motor de IA**:
+
+| Opción | Qué necesitas |
+|---|---|
+| **Claude Code** (recomendado) | `curl -fsSL https://claude.ai/install.sh \| bash`, luego `claude` para iniciar sesión, y la extensión Claude in Chrome. Es la que está probada de punta a punta. |
+| **Codex (OpenAI)** | `npm i -g @openai/codex` y `codex login`. Para que use el navegador, configura un servidor MCP de Chrome en `~/.codex/config.toml`. |
+| **Gemini CLI (Google)** | `npm i -g @google/gemini-cli` y abrir `gemini` una vez para iniciar sesión. Para el navegador, un servidor MCP de Chrome en `~/.gemini/settings.json`. |
+| **Otra IA** | Escribes el comando. Hirebar lo corre en la terminal con estas variables: `$HIREBAR_PROMPT` (el pedido), `$HIREBAR_INSTRUCTIONS` (ruta de las reglas de la tarea), `$HIREBAR_FULL_PROMPT` (reglas + pedido juntos) y `$HIREBAR_WORKSPACE` (la carpeta de trabajo). Lo que imprima es la respuesta que te llega a Telegram. |
+
+Después de elegir, pulsa **Probar**: le hace una pregunta corta y te dice si respondió, si falta iniciar sesión o qué error dio. Luego **Guardar**.
+
+Ejemplo de comando propio: `mi-ia run --system-file "$HIREBAR_INSTRUCTIONS" "$HIREBAR_PROMPT"`.
+
+Si la sesión de la IA se vence, te llega un aviso por Telegram con el comando para volver a entrar, y las listas quedan guardadas para reintentar con `si`.
+
 ## Agregar o quitar portales
 
 Empleo y Freelance traen portales incluidos y aceptan los que tú agregues.

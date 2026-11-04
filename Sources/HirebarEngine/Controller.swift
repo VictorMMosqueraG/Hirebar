@@ -66,7 +66,7 @@ public final class Controller {
         if running == nil {
             runNext()
         } else {
-            reply("Anotado: Claude está terminando otra lista y sigue con esta.")
+            reply("Anotado: \(AI.capitalizedName) está terminando otra lista y sigue con esta.")
         }
     }
 
@@ -101,7 +101,7 @@ public final class Controller {
     private func stopIfStuck() {
         guard let process = running, process.isRunning, let started = runStarted,
               Date().timeIntervalSince(started) > Self.maxRunSeconds else { return }
-        Log.write("Claude: lote \(runningBatch ?? "?") lleva más de 1 hora, se detiene")
+        Log.write("IA: lote \(runningBatch ?? "?") lleva más de 1 hora, se detiene")
         process.terminate()
     }
 
@@ -128,24 +128,26 @@ public final class Controller {
         guard running == nil, !queue.isEmpty else { return }
         let (pending, items) = queue.removeFirst()
         var batch = pending
-        guard let claude = ClaudeCLI.path() else {
-            batch.status = .failed
-            BatchStore.upsert(batch)
-            reply("No encontré Claude Code en el Mac. Instálalo con: curl -fsSL https://claude.ai/install.sh | bash, inicia sesión con 'claude' y vuelve a responder si.")
-            setStatus("falta instalar Claude Code")
-            runNext()
-            return
-        }
         Paths.ensure()
         let outURL = Paths.runs.appendingPathComponent("\(batch.id).txt")
         let errURL = Paths.runs.appendingPathComponent("\(batch.id).log")
         FileManager.default.createFile(atPath: outURL.path, contents: nil)
         FileManager.default.createFile(atPath: errURL.path, contents: nil)
         let owner = Config.load().ownerName
-        let process = ClaudeCLI.process(executable: claude,
-                                        prompt: AgentPrompts.prompt(for: batch, items: items, owner: owner),
-                                        playbook: Paths.playbook(for: batch.mode),
-                                        output: outURL, errors: errURL)
+        let launch = ClaudeCLI.makeProcess(engine: AI.settings,
+                                           prompt: AgentPrompts.prompt(for: batch, items: items, owner: owner),
+                                           playbook: Paths.playbook(for: batch.mode),
+                                           output: outURL, errors: errURL)
+        guard case .success(let process) = launch else {
+            if case .failure(let problem) = launch {
+                reply(problem.message)
+                setStatus(problem.status)
+            }
+            batch.status = .failed
+            BatchStore.upsert(batch)
+            runNext()
+            return
+        }
         let batchId = batch.id
         let mode = batch.mode
         process.terminationHandler = { finished in
@@ -159,7 +161,7 @@ public final class Controller {
         } catch {
             batch.status = .failed
             BatchStore.upsert(batch)
-            reply("No pude abrir Claude Code: \(error.localizedDescription)")
+            reply("No pude abrir \(AI.name): \(error.localizedDescription)")
             runNext()
             return
         }
@@ -169,12 +171,12 @@ public final class Controller {
         runStarted = Date()
         setStatus(AgentPrompts.statusText(for: mode, count: items.count, since: TextTools.shortTime()))
         if mode == .freelance || mode == .jobs {
-            reply("Claude empezó: \(items.count) \(Self.noun(for: mode)). Te aviso cuando termine (suele tardar 5–20 min).")
+            reply("\(AI.capitalizedName) empezó: \(items.count) \(Self.noun(for: mode)). Te aviso cuando termine (suele tardar 5–20 min).")
         }
-        Log.write("Claude: inicia lote \(batchId) con \(items.count) elemento(s)")
+        Log.write("IA: inicia lote \(batchId) con \(items.count) elemento(s)")
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.maxRunSeconds) { [weak self] in
             guard let self, self.runningBatch == batchId, let process = self.running, process.isRunning else { return }
-            Log.write("Claude: lote \(batchId) superó 1 hora, se detiene")
+            Log.write("IA: lote \(batchId) superó 1 hora, se detiene")
             process.terminate()
         }
     }
@@ -185,7 +187,7 @@ public final class Controller {
         runningMode = nil
         let output = ((try? String(contentsOf: outURL, encoding: .utf8)) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let errors = (try? String(contentsOf: errURL, encoding: .utf8)) ?? ""
-        Log.write("Claude: lote \(batchId) terminó con código \(code)")
+        Log.write("IA: lote \(batchId) terminó con código \(code)")
 
         if code != 0 && ClaudeCLI.isAuthFailure(output + "\n" + errors) {
             handleAuthFailure(batchId, mode: mode, items: items)
@@ -207,11 +209,11 @@ public final class Controller {
             if mode.hasItems { batch.items = items }
             BatchStore.upsert(batch)
         }
-        Log.write("Claude: la sesión de Claude Code venció; lote \(batchId) queda para reintentar")
+        Log.write("IA: la sesión venció; lote \(batchId) queda para reintentar")
         let now = Date()
         if lastAuthAlert.map({ now.timeIntervalSince($0) > Self.authAlertEvery }) ?? true {
             lastAuthAlert = now
-            reply("La sesión de Claude Code se venció y no pude trabajar. Abre Terminal, escribe claude y luego /login. Las listas de propuestas y postulaciones quedaron guardadas: responde \"si\" para reintentar la última.")
+            reply("La sesión de \(AI.settings.kind.title) se venció y no pude trabajar. \(ClaudeCLI.loginHint(AI.settings.kind)) Las listas de propuestas y postulaciones quedaron guardadas: responde \"si\" para reintentar la última.")
         }
     }
 
@@ -231,7 +233,7 @@ public final class Controller {
         }
         guard code == 0 && !output.isEmpty else {
             let detail = output.isEmpty ? "sin salida" : String(output.suffix(1500))
-            reply("Claude terminó con error (código \(code)). Detalle: \(detail)\nRegistro: workspace/ejecuciones/\(batchId).log")
+            reply("\(AI.capitalizedName) terminó con error (código \(code)). Detalle: \(detail)\nRegistro: workspace/ejecuciones/\(batchId).log")
             return
         }
         reply(String(output.suffix(3800)))
@@ -268,8 +270,8 @@ public final class Controller {
         let auto = AgentStore.load(agent).autoApprove
         let noun = agent == .jobs ? "vacante(s)" : "proyecto(s)"
         Notifier.announce(batch, title: "Tus portales: \(hits.count) \(noun) para ti" + (auto ? " (envío automático)" : ""),
-                          footer: auto ? "Claude ya los está procesando; te aviso al terminar."
-                                       : "Responde \"si\" para que Claude los procese, \"si 1 3\" para elegir o \"no\" para descartar.")
+                          footer: auto ? "\(AI.capitalizedName) ya los está procesando; te aviso al terminar."
+                                       : "Responde \"si\" para que \(AI.name) los procese, \"si 1 3\" para elegir o \"no\" para descartar.")
         if auto { autoApprove(batch) }
     }
 
@@ -285,7 +287,7 @@ public final class Controller {
                 Notifier.sendFile(file, caption: "Hoja de vida actualizada: \(file.lastPathComponent)")
             }
             var lines = ["Hojas de vida: \(result.made.count) de \(profile.cvVariants.count) listas."]
-            if !result.missing.isEmpty { lines.append("Claude no dejó el HTML de: \(result.missing.joined(separator: ", ")).") }
+            if !result.missing.isEmpty { lines.append("\(AI.capitalizedName) no dejó el HTML de: \(result.missing.joined(separator: ", ")).") }
             if !result.failed.isEmpty { lines.append("No pude crear el PDF de: \(result.failed.joined(separator: ", ")) (revisa que Google Chrome esté instalado).") }
             self?.reply(lines.joined(separator: "\n"))
         }

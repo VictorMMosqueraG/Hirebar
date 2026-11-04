@@ -13,12 +13,13 @@ public struct Config: Codable, Sendable {
     public var autoEmails = false
     public var freelanceMinutes = 20
     public var jobMinutes = 30
+    public var aiEngine = AIEngineSettings()
     public var updated = ""
 
     public init() {}
 
     enum CodingKeys: String, CodingKey {
-        case ownerName, sources, chatId, ntfyTopic, autoFreelance, autoJobs, autoEmails, freelanceMinutes, jobMinutes, updated
+        case ownerName, sources, chatId, ntfyTopic, autoFreelance, autoJobs, autoEmails, freelanceMinutes, jobMinutes, aiEngine, updated
     }
 
     struct LegacyKey: CodingKey {
@@ -39,6 +40,7 @@ public struct Config: Codable, Sendable {
         autoEmails = try c.decodeIfPresent(Bool.self, forKey: .autoEmails) ?? false
         freelanceMinutes = max(15, try c.decodeIfPresent(Int.self, forKey: .freelanceMinutes) ?? 20)
         jobMinutes = max(20, try c.decodeIfPresent(Int.self, forKey: .jobMinutes) ?? 30)
+        aiEngine = try c.decodeIfPresent(AIEngineSettings.self, forKey: .aiEngine) ?? AIEngineSettings()
         updated = try c.decodeIfPresent(String.self, forKey: .updated) ?? ""
 
         let legacy = try decoder.container(keyedBy: LegacyKey.self)

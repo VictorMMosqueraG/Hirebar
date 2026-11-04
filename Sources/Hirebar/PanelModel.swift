@@ -53,6 +53,7 @@ enum AgentStyle {
 final class PanelModel: ObservableObject {
     @Published var agents: [AgentCardData] = []
     @Published var claude = "en espera"
+    @Published var aiName = "Claude"
     @Published var claudeBusy = false
     @Published var telegram = ""
     @Published var telegramReady = false
@@ -68,6 +69,7 @@ final class PanelModel: ObservableObject {
         let running = Controller.shared.runningAgent
         agents = AgentKind.allCases.map { card($0, running: running) }
         claude = Controller.shared.status
+        aiName = AI.capitalizedName
         claudeBusy = !Controller.shared.isIdle
         let config = Config.load()
         if !Telegram.shared.isConfigured {

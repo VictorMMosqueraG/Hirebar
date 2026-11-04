@@ -74,8 +74,8 @@ public final class FreelanceRadar: Radar {
         let auto = AgentStore.load(.freelance).autoApprove
         let title = "Radar freelance: \(hits.count) proyecto(s) para ti" + (auto ? " (envío automático)" : "")
         let footer = auto
-            ? "Cupos: \(Quotas.summary())\n\nClaude ya está analizando y enviando las propuestas; te aviso al terminar."
-            : "Cupos: \(Quotas.summary())\n\nResponde \"si\" y Claude analiza la competencia, redacta y envía las propuestas. \"si 1 3\" para elegir, \"no\" para descartar."
+            ? "Cupos: \(Quotas.summary())\n\n\(AI.capitalizedName) ya está analizando y enviando las propuestas; te aviso al terminar."
+            : "Cupos: \(Quotas.summary())\n\nResponde \"si\" y \(AI.name) analiza la competencia, redacta y envía las propuestas. \"si 1 3\" para elegir, \"no\" para descartar."
         Notifier.announce(batch, title: title, footer: footer)
         if auto {
             DispatchQueue.main.async { Controller.shared.autoApprove(BatchStore.find(id: batch.id) ?? batch) }

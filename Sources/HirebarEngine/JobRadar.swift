@@ -95,8 +95,8 @@ public final class JobRadar: Radar {
         let auto = AgentStore.load(.jobs).autoApprove
         Notifier.announce(batch, title: auto ? title + " (postulación automática)" : title,
                           footer: auto
-                            ? "Claude ya está revisando cada vacante y postulándote; te aviso al terminar."
-                            : "Responde \"si\" y Claude revisa cada vacante, llena el formulario y te postula. \"si 1 3\" para elegir, \"no\" para descartar.")
+                            ? "\(AI.capitalizedName) ya está revisando cada vacante y postulándote; te aviso al terminar."
+                            : "Responde \"si\" y \(AI.name) revisa cada vacante, llena el formulario y te postula. \"si 1 3\" para elegir, \"no\" para descartar.")
         if auto {
             DispatchQueue.main.async { Controller.shared.autoApprove(BatchStore.find(id: batch.id) ?? batch) }
         }

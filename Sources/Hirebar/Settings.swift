@@ -1,10 +1,12 @@
 import AppKit
 import HirebarCore
+import HirebarEngine
 import SwiftUI
 
 enum SettingsPage: Hashable {
     case agent(AgentKind)
     case skills
+    case engine
 }
 
 final class SettingsWindowController {
@@ -48,6 +50,10 @@ final class SettingsModel: ObservableObject {
     @Published var sources: [String: Bool] = [:]
     @Published var skills: [EditableSkill] = []
     @Published var portals: [CustomPortal] = []
+    @Published var engine = AIEngineSettings()
+    @Published var engineCheck: String?
+    @Published var engineCheckOK = false
+    @Published var checkingEngine = false
     @Published var selection: SettingsPage? = .agent(.jobs)
     @Published var message: String?
 
@@ -59,6 +65,8 @@ final class SettingsModel: ObservableObject {
         sources = Dictionary(uniqueKeysWithValues: (Config.jobSources + Config.freelanceSources).map { ($0, config.isEnabled($0)) })
         skills = Profile.load().skills.map { EditableSkill(skill: $0) }
         portals = PortalStore.load()
+        engine = Config.load().aiEngine
+        engineCheck = nil
         message = nil
     }
 
@@ -83,6 +91,7 @@ final class SettingsModel: ObservableObject {
         }
         var config = Config.load()
         for (source, on) in sources { config.setEnabled(source, on) }
+        config.aiEngine = engine
         config.save()
         let result: String
         do {
@@ -116,6 +125,16 @@ final class SettingsModel: ObservableObject {
             })
     }
 
+    func checkEngine() {
+        checkingEngine = true
+        engineCheck = "Probando… puede tardar hasta un minuto."
+        EngineCheck.run(engine) { [weak self] ok, text in
+            self?.checkingEngine = false
+            self?.engineCheckOK = ok
+            self?.engineCheck = text
+        }
+    }
+
     func addPortal(_ kind: AgentKind) {
         portals.append(CustomPortal(name: "", agent: kind, url: "https://"))
     }
@@ -131,6 +150,8 @@ final class SettingsModel: ObservableObject {
         switch selection {
         case .skills:
             NSWorkspace.shared.activateFileViewerSelecting([Profile.url])
+        case .engine:
+            NSWorkspace.shared.activateFileViewerSelecting([Paths.config])
         case .agent(let kind):
             NSWorkspace.shared.activateFileViewerSelecting([AgentStore.url(for: kind)])
         case nil:
@@ -156,6 +177,10 @@ struct SettingsView: View {
                     Label("Habilidades", systemImage: "star.fill")
                         .tag(SettingsPage.skills)
                 }
+                Section("General") {
+                    Label("Motor de IA", systemImage: "cpu")
+                        .tag(SettingsPage.engine)
+                }
             }
             .listStyle(.sidebar)
             .frame(width: 210)
@@ -179,6 +204,8 @@ struct SettingsView: View {
             }
         case .skills:
             SkillsEditor(skills: $model.skills)
+        case .engine:
+            EngineEditor(model: model)
         case nil:
             Text("Elige un agente a la izquierda.")
                 .foregroundStyle(.secondary)
@@ -239,7 +266,7 @@ struct AgentEditor: View {
                 } header: {
                     Text("Portales incluidos")
                 } footer: {
-                    Text("Se revisan solos, sin usar a Claude: leen las páginas públicas y te avisan lo que encaja con tu perfil.")
+                    Text("Se revisan solos, sin usar IA: leen las páginas públicas y te avisan lo que encaja con tu perfil.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -255,7 +282,7 @@ struct AgentEditor: View {
                         LabeledContent("Cupo diario", value: limit.wrappedValue == 0 ? "sin límite" : "\(limit.wrappedValue)")
                     }
                 } footer: {
-                    Text("Se le indica a Claude como máximo de envíos por día para este agente.")
+                    Text("Se le indica a la IA como máximo de envíos por día para este agente.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -447,9 +474,80 @@ struct CustomPortalsSection: View {
         } header: {
             Text("Tus portales")
         } footer: {
-            Text("Pega el enlace de una búsqueda ya filtrada en el portal que quieras. Claude lo revisa con tu Chrome (sirve aunque pida sesión iniciada) a las horas de la tarea \"Revisar tus portales\" y te manda lo que encuentre en la lista de siempre.")
+            Text("Pega el enlace de una búsqueda ya filtrada en el portal que quieras. La IA lo revisa con tu Chrome (sirve aunque pida sesión iniciada) a las horas de la tarea \"Revisar tus portales\" y te manda lo que encuentre en la lista de siempre.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+    }
+}
+
+struct EngineEditor: View {
+    @ObservedObject var model: SettingsModel
+
+    var body: some View {
+        Form {
+            Section {
+                Picker("IA", selection: $model.engine.kind) {
+                    ForEach(AIEngineKind.allCases, id: \.self) { kind in
+                        Text(kind.title).tag(kind)
+                    }
+                }
+                .pickerStyle(.radioGroup)
+                Text(model.engine.kind.summary)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } header: {
+                Text("Qué IA hace el trabajo")
+            } footer: {
+                Text("La búsqueda en los portales incluidos no usa IA. La IA se usa para enviar propuestas, postular, hacer seguimientos, escribir correos y publicaciones, y actualizar tu perfil.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if model.engine.kind == .custom {
+                Section {
+                    TextField("Comando", text: $model.engine.customCommand,
+                              prompt: Text("mi-ia --prompt \"$HIREBAR_FULL_PROMPT\""), axis: .vertical)
+                        .font(.system(.body, design: .monospaced))
+                        .lineLimit(2...5)
+                } header: {
+                    Text("Comando de tu IA")
+                } footer: {
+                    Text("Se ejecuta en una terminal con estas variables:\n" + AIEngineSettings.variablesHelp + "\nLo que imprima es la respuesta que te llega a Telegram.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } else if model.engine.kind != .claude {
+                Section {
+                    Text(model.engine.kind.commandTemplate)
+                        .font(.system(.caption, design: .monospaced))
+                        .textSelection(.enabled)
+                } header: {
+                    Text("Comando que se usa")
+                } footer: {
+                    Text("Si tu versión usa otras opciones, elige \"Otra IA\" y copia este comando para ajustarlo.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Section {
+                HStack {
+                    Button(model.checkingEngine ? "Probando…" : "Probar") { model.checkEngine() }
+                        .disabled(model.checkingEngine)
+                    if let text = model.engineCheck {
+                        Label(text, systemImage: model.engineCheckOK ? "checkmark.circle.fill" : "info.circle")
+                            .font(.caption)
+                            .foregroundStyle(model.engineCheckOK ? Color.green : Color.secondary)
+                    }
+                }
+            } footer: {
+                Text("Prueba la IA elegida con una pregunta corta, antes o después de guardar.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
     }
 }

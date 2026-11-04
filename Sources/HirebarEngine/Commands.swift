@@ -4,10 +4,10 @@ import HirebarCore
 extension Controller {
     static let help = """
     Comandos:
-    si: Claude envía/postula a toda la última lista
+    si: la IA envía/postula a toda la última lista
     si 1 3: solo esos números
     no: descarta la lista
-    estado: cupos, próximas búsquedas y qué está haciendo Claude
+    estado: cupos, próximas búsquedas y qué está haciendo la IA
     buscar: busca proyectos y vacantes ya (o "buscar freelance", "buscar empleo")
     seguimientos: revisa y hace seguimientos ahora
     informe: arma ya el informe semanal
@@ -125,7 +125,7 @@ extension Controller {
 
     public func statusReport() -> String {
         """
-        Claude: \(status)
+        \(AI.capitalizedName): \(status)
         Cupos: \(Quotas.summary())
         Búsqueda freelance: \(FreelanceRadar.shared.status)
         Búsqueda de empleo: \(JobRadar.shared.status)

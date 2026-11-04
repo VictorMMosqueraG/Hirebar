@@ -1,6 +1,6 @@
 # Hirebar
 
-App para la barra de menú de macOS que busca empleo remoto, proyectos freelance y clientes por ti. Revisa los portales cada pocos minutos, filtra con tu perfil y te avisa por Telegram. Cuando apruebas (o si activas el envío automático), [Claude Code](https://claude.com/claude-code) abre tu Chrome, redacta y envía las propuestas o postulaciones, y te cuenta qué hizo.
+App para la barra de menú de macOS que busca empleo remoto, proyectos freelance y clientes por ti. Revisa los portales cada pocos minutos, filtra con tu perfil y te avisa por Telegram. Cuando apruebas (o si activas el envío automático), una IA de terminal abre tu Chrome, redacta y envía las propuestas o postulaciones, y te cuenta qué hizo. Puedes usar [Claude Code](https://claude.com/claude-code) (recomendado), Codex de OpenAI, Gemini CLI de Google u otra que se pueda ejecutar desde la terminal.
 
 Está dividida en agentes independientes, cada uno con su horario: **Empleo, Freelance, Clientes, Contenido, Perfil y Analista**. Cómo se usa cada uno está en la [guía de uso](GUIA.md).
 
@@ -8,8 +8,8 @@ Está dividida en agentes independientes, cada uno con su horario: **Empleo, Fre
 
 - macOS 13 o superior.
 - Xcode 15, o las herramientas de línea de comandos con Swift 5.9 o superior, para compilar.
-- [Claude Code](https://claude.com/claude-code) instalado y con sesión iniciada (`claude` en la terminal).
-- Google Chrome con la extensión Claude in Chrome y tu sesión iniciada en los portales donde quieres que postule.
+- Una IA de terminal con sesión iniciada. Por defecto, [Claude Code](https://claude.com/claude-code) (`claude` en la terminal) con la extensión Claude in Chrome. Para usar otra, mira "Motor de IA" en la [guía de uso](GUIA.md).
+- Google Chrome con tu sesión iniciada en los portales donde quieres que postule.
 - Un bot de Telegram (se crea con @BotFather en un minuto).
 
 ## Instalación
@@ -33,8 +33,9 @@ Compila, copia la app a `~/Applications/Hirebar.app` y la abre. Aparece un malet
 1. **Telegram:** clic en el maletín → engranaje → **Configurar bot de Telegram…**. Pega el token de @BotFather y envíale `/start` a tu bot desde el celular.
 2. **Tu perfil:** pie del panel → **Datos** → abre `workspace/perfil.json` y llénalo con tu información real: datos, experiencia con logros, habilidades con nivel y las versiones de hoja de vida que quieres (`cvVariants`). Viene con un ejemplo para guiarte.
 3. **Hojas de vida:** escribe `hv` a tu bot. Claude genera `perfil.md` y una hoja de vida en PDF por cada versión.
-4. **Agentes:** pie del panel → **Ajustes**. Prende los que quieras, ajusta horarios y portales, y decide cuáles envían solos.
-5. **Inicio automático:** engranaje → **Abrir al iniciar sesión**.
+4. **IA:** pie del panel → **Ajustes → Motor de IA**. Elige cuál usar y pulsa **Probar**.
+5. **Agentes:** en la misma ventana de **Ajustes**. Prende los que quieras, ajusta horarios y portales, y decide cuáles envían solos.
+6. **Inicio automático:** engranaje → **Abrir al iniciar sesión**.
 
 ## Dónde quedan tus datos
 
@@ -42,7 +43,7 @@ Todo vive en `~/Library/Application Support/Hirebar/`, fuera del repositorio. Ac
 
 | Archivo | Para qué |
 |---|---|
-| `config.json` | Portales activos, tu nombre y el chat de Telegram. |
+| `config.json` | Portales activos, la IA elegida, tu nombre y el chat de Telegram. |
 | `workspace/perfil.json` | Tu perfil: la única fuente de tu experiencia. Claude no inventa nada que no esté aquí. |
 | `workspace/agentes/<agente>.json` | Horario, envío automático, frecuencia y cupo de cada agente. Se edita desde Ajustes. |
 | `workspace/search-profile.json` | Palabras de búsqueda y descartes de los portales incluidos. |

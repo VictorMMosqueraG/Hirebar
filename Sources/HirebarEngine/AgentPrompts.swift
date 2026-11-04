@@ -8,7 +8,7 @@ enum AgentPrompts {
         }.joined(separator: "\n")
         let now = DateFormatter.localizedString(from: Date(), dateStyle: .medium, timeStyle: .short)
         let week = Metrics.weekKey()
-        let browser = "Usa su navegador con las herramientas de Claude in Chrome."
+        let browser = AI.settings.kind.browserHint
         let limit = AgentStore.load(AgentKind.owner(of: batch.mode)).dailyLimit.map { " Cupo diario de este agente: \($0)." } ?? ""
         switch batch.mode {
         case .followUp:

@@ -3,7 +3,8 @@ import HirebarCore
 
 enum ClaudeCLI {
     static let tools = ["Read", "Write", "Edit", "Glob", "Grep", "WebFetch", "WebSearch"]
-    static let authFailureHints = ["failed to authenticate", "oauth session expired", "please run /login", "invalid api key", "not logged in"]
+    static let authFailureHints = ["failed to authenticate", "oauth session expired", "please run /login", "invalid api key",
+                                   "not logged in", "please log in", "codex login", "login required", "unauthenticated"]
 
     static func path() -> String? {
         let home = Paths.home.path
@@ -26,12 +27,63 @@ enum ClaudeCLI {
                              "--output-format", "text",
                              "--allowedTools", "mcp__claude-in-chrome"] + tools
         var env = ProcessInfo.processInfo.environment
-        env["PATH"] = "\(Paths.home.path)/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+        env["PATH"] = searchPath
         process.environment = env
         process.standardInput = FileHandle.nullDevice
         process.standardOutput = try? FileHandle(forWritingTo: output)
         process.standardError = try? FileHandle(forWritingTo: errors)
         return process
+    }
+
+    static var searchPath: String {
+        "\(Paths.home.path)/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+    }
+
+    static func shellProcess(command: String, environment extra: [String: String], output: URL, errors: URL) -> Process {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
+        process.arguments = ["-lc", command]
+        process.currentDirectoryURL = Paths.workspace
+        var env = ProcessInfo.processInfo.environment
+        env["PATH"] = searchPath + ":" + (env["PATH"] ?? "")
+        for (key, value) in extra { env[key] = value }
+        process.environment = env
+        process.standardInput = FileHandle.nullDevice
+        process.standardOutput = try? FileHandle(forWritingTo: output)
+        process.standardError = try? FileHandle(forWritingTo: errors)
+        return process
+    }
+
+    struct LaunchProblem: Error {
+        let message: String
+        let status: String
+    }
+
+    static func makeProcess(engine: AIEngineSettings, prompt: String, playbook: URL, output: URL, errors: URL) -> Result<Process, LaunchProblem> {
+        if engine.kind == .claude {
+            guard let claude = path() else {
+                return .failure(LaunchProblem(
+                    message: "No encontré Claude Code en el Mac. Instálalo con: curl -fsSL https://claude.ai/install.sh | bash, inicia sesión con 'claude' y vuelve a responder si. O elige otra IA en Ajustes → Motor de IA.",
+                    status: "falta instalar Claude Code"))
+            }
+            return .success(process(executable: claude, prompt: prompt, playbook: playbook, output: output, errors: errors))
+        }
+        let command = engine.command
+        guard !command.isEmpty else {
+            return .failure(LaunchProblem(message: "Falta el comando de tu IA. Escríbelo en Ajustes → Motor de IA.",
+                                          status: "falta configurar la IA"))
+        }
+        let environment = AIEngineSettings.environment(prompt: prompt, instructions: playbook)
+        return .success(shellProcess(command: command, environment: environment, output: output, errors: errors))
+    }
+
+    static func loginHint(_ kind: AIEngineKind) -> String {
+        switch kind {
+        case .claude: return "Abre Terminal, escribe claude y luego /login."
+        case .codex: return "Abre Terminal y escribe codex login."
+        case .gemini: return "Abre Terminal, escribe gemini y vuelve a iniciar sesión."
+        case .custom: return "Vuelve a iniciar sesión en tu IA desde la Terminal."
+        }
     }
 
     static func isAuthFailure(_ text: String) -> Bool {

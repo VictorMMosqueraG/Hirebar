@@ -108,7 +108,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         for (item, kind) in headers { item.title = headerTitle(kind) }
         for (item, isOn) in checks { item.state = isOn() ? .on : .off }
         for (item, text) in labels { item.title = text() }
-        claudeItem.title = "Claude: \(Controller.shared.status)"
+        claudeItem.title = "\(AI.capitalizedName): \(Controller.shared.status)"
         let config = Config.load()
         let state: String
         if !Telegram.shared.isConfigured {

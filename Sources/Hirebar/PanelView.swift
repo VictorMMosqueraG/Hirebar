@@ -49,7 +49,7 @@ struct PanelView: View {
                     Circle()
                         .fill(model.claudeBusy ? Color.orange : Color.green)
                         .frame(width: 6, height: 6)
-                    Text("Claude \(model.claude)")
+                    Text("\(model.aiName) \(model.claude)")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
