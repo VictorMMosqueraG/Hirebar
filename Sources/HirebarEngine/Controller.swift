@@ -13,6 +13,7 @@ public final class Controller {
     private var running: Process?
     private var runningBatch: String?
     private var runningMode: Mode?
+    private var runningAccount: String?
     private var runStarted: Date?
     private var watchdog: Timer?
     private var lastAuthAlert: Date?
@@ -70,27 +71,43 @@ public final class Controller {
         }
     }
 
-    public func runScheduled(_ mode: Mode, manual: Bool = false) {
+    public func runScheduled(_ mode: Mode, manual: Bool = false, account: String? = nil) {
+        if mode == .linkedInDraft && account == nil {
+            // Una publicación por cuenta prendida; las programadas, solo en los días de cada cuenta.
+            let today = Date()
+            let accounts = ContentAccountStore.enabled().filter { manual || $0.runs(on: today) }
+            if accounts.isEmpty && manual {
+                reply("No tienes cuentas de contenido prendidas. Agrégalas en Ajustes → Cuentas de contenido.")
+            }
+            for item in accounts { runScheduled(mode, manual: manual, account: item.id) }
+            return
+        }
         if Scheduler.isIdlePortalScan(mode) {
             if manual { reply("No tienes portales propios activos. Agrégalos en Ajustes → \(AgentStore.load(AgentKind.owner(of: mode)).name).") }
             return
         }
-        if runningMode == mode || queue.contains(where: { $0.0.mode == mode }) {
+        if (runningMode == mode && runningAccount == account)
+            || queue.contains(where: { $0.0.mode == mode && $0.0.account == account }) {
             if manual { reply("Eso ya está en curso.") }
             return
         }
-        let batch = Batch(mode: mode, status: .running, manual: manual)
+        let batch = Batch(mode: mode, status: .running, manual: manual, account: account)
         BatchStore.upsert(batch)
         // Una publicación pedida a mano no espera detrás de las búsquedas: va de primera en la fila.
-        let jumpsQueue = manual && mode == .linkedInDraft
-        if jumpsQueue { queue.insert((batch, []), at: 0) } else { queue.append((batch, [])) }
+        if manual && mode == .linkedInDraft {
+            let ahead = queue.prefix { $0.0.mode == .linkedInDraft && $0.0.isManual }.count
+            queue.insert((batch, []), at: ahead)
+        } else {
+            queue.append((batch, []))
+        }
+        let accountTitle = ContentAccountStore.find(account)?.title ?? "tu cuenta"
         if manual {
             switch mode {
             case .weeklyReport: reply("Preparando el informe semanal; te lo mando al terminar.")
             case .linkedInDraft:
-                reply("Armando la publicación con sus imágenes; te la mando antes de publicar nada."
+                reply("Armando la publicación para \(accountTitle) con sus imágenes; te la mando antes de publicar nada."
                       + (running == nil ? "" : " Empieza apenas termine lo que está corriendo ahora."))
-            case .linkedInPublish: reply("Publicando en LinkedIn el borrador que aprobaste; te confirmo al terminar.")
+            case .linkedInPublish: reply("Publicando en \(accountTitle) la publicación que aprobaste; te confirmo al terminar.")
             case .followUp: reply("Revisando seguimientos ahora; te aviso si escribo a algún cliente.")
             case .prospectingSend: reply("Enviando los correos aprobados; te confirmo al terminar.")
             case .social: reply("Buscando vacantes publicadas en redes; te aviso si encuentro algo.")
@@ -138,7 +155,9 @@ public final class Controller {
         FileManager.default.createFile(atPath: outURL.path, contents: nil)
         FileManager.default.createFile(atPath: errURL.path, contents: nil)
         let owner = Config.load().ownerName
-        if batch.mode == .linkedInDraft { SlideRenderer.prepare() }
+        if batch.mode == .linkedInDraft, let account = ContentAccountStore.find(batch.account) {
+            SlideRenderer.prepare(account)
+        }
         let launch = ClaudeCLI.makeProcess(engine: AI.settings,
                                            prompt: AgentPrompts.prompt(for: batch, items: items, owner: owner),
                                            playbook: Paths.playbook(for: batch.mode),
@@ -174,6 +193,7 @@ public final class Controller {
         running = process
         runningBatch = batchId
         runningMode = mode
+        runningAccount = batch.account
         runStarted = Date()
         setStatus(AgentPrompts.statusText(for: mode, count: items.count, since: TextTools.shortTime()))
         if mode == .freelance || mode == .jobs {
@@ -191,6 +211,7 @@ public final class Controller {
         running = nil
         runningBatch = nil
         runningMode = nil
+        runningAccount = nil
         let output = ((try? String(contentsOf: outURL, encoding: .utf8)) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let errors = (try? String(contentsOf: errURL, encoding: .utf8)) ?? ""
         Log.write("IA: lote \(batchId) terminó con código \(code)")
@@ -247,21 +268,29 @@ public final class Controller {
         case .prospecting: offerProspectingEmails()
         case .profileUpdate: finishProfileUpdate()
         case .linkedInDraft:
-            sendSlides()
+            sendSlides(BatchStore.find(id: batchId)?.account)
         default: break
         }
     }
 
-    private func sendSlides() {
-        SlideRenderer.renderAll { [weak self] made, failed in
-            Notifier.sendPhotos(made, caption: "Imágenes de la publicación (\(made.count))") {
+    private func sendSlides(_ accountId: String?) {
+        guard let account = ContentAccountStore.find(accountId) else {
+            reply("No encontré la cuenta de esta publicación en Ajustes → Cuentas de contenido.")
+            return
+        }
+        let several = ContentAccountStore.load().count > 1
+        let publish = several ? "publica \(account.id)" : "publica"
+        let change = several ? "post \(account.id) cambia <qué>" : "post cambia <qué>"
+        let skip = several ? "post \(account.id) salta" : "post salta"
+        SlideRenderer.renderAll(account) { [weak self] made, failed in
+            Notifier.sendPhotos(made, caption: "\(account.title): imágenes de la publicación (\(made.count))") {
                 var note = ""
                 if made.isEmpty {
                     note = "Esta vez no salieron imágenes (\(AI.name) no dejó las láminas o Chrome no pudo convertirlas). "
                 } else if failed > 0 {
                     note = "\(failed) lámina(s) no se pudieron convertir. "
                 }
-                self?.reply(note + "¿Lo subo a LinkedIn? Responde \"publica\" para subirlo tal cual, \"post cambia <qué>\" para ajustarlo o \"post salta\" para no publicarlo.")
+                self?.reply(note + "¿Lo subo a \(account.title)? Responde \"\(publish)\" para subirlo tal cual, \"\(change)\" para ajustarlo o \"\(skip)\" para no publicarlo.")
             }
         }
     }

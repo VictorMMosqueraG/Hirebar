@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 public enum Paths {
@@ -32,13 +33,24 @@ public enum Paths {
         }
     }
 
-    /// Láminas (HTML de 1080×1350 y sus PNG) de la publicación en borrador.
-    public static var slides: URL { linkedIn.appendingPathComponent("laminas", isDirectory: true) }
+    /// Una carpeta por cuenta de contenido (borrador, láminas y temas usados).
+    public static var content: URL { workspace.appendingPathComponent("contenido", isDirectory: true) }
 
     public static func ensure() {
-        for dir in [root, workspace, runs, reports, prospecting, linkedIn, logs] {
+        for dir in [root, workspace, runs, reports, prospecting, linkedIn, content, logs] {
             try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         }
+    }
+
+    /// Huellas de versiones anteriores de las plantillas. Si el archivo instalado es una de ellas (no lo editaste),
+    /// se reemplaza por la versión nueva; si lo editaste, se deja como está.
+    static let previousVersions: [String: Set<String>] = [
+        "instrucciones-contenido.md": ["7d0570183da32781761a75b9ababc55aeaa9984431225a254c776db5ee110bc5"],
+        "instrucciones-contenido-publicar.md": ["c84254fb1ade7117e9289e504c73a1851d07b9912eaf9c6aca9eb170c6b8ae5d"],
+    ]
+
+    static func sha256(_ data: Data) -> String {
+        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 
     public static func installTemplates(from bundled: URL?) {
@@ -53,8 +65,14 @@ public enum Paths {
             guard let files = try? fm.contentsOfDirectory(atPath: source.path) else { continue }
             for name in files where !name.hasPrefix(".") {
                 let destination = target.appendingPathComponent(name)
+                let original = source.appendingPathComponent(name)
                 if !fm.fileExists(atPath: destination.path) {
-                    try? fm.copyItem(at: source.appendingPathComponent(name), to: destination)
+                    try? fm.copyItem(at: original, to: destination)
+                } else if let installed = try? Data(contentsOf: destination),
+                          let fresh = try? Data(contentsOf: original), installed != fresh,
+                          previousVersions[name]?.contains(sha256(installed)) == true {
+                    // Una versión anterior de Hirebar que nadie editó: se cambia por la nueva.
+                    try? fresh.write(to: destination, options: .atomic)
                 }
             }
         }

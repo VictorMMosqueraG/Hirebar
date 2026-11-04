@@ -7,27 +7,26 @@ public enum SlideRenderer {
     static let height = 1350
     static let timeout: TimeInterval = 60
 
-    static var folder: URL { Paths.slides }
-
-    /// Deja la carpeta vacía antes de un borrador nuevo; lo anterior queda en linkedin/laminas-anteriores/.
-    public static func prepare() {
+    /// Deja la carpeta de láminas vacía antes de un borrador nuevo; lo anterior queda en laminas-anteriores/.
+    public static func prepare(_ account: ContentAccount) {
         let fm = FileManager.default
-        let previous = Paths.linkedIn.appendingPathComponent("laminas-anteriores", isDirectory: true)
-        if fm.fileExists(atPath: folder.path) {
+        let previous = account.folder.appendingPathComponent("laminas-anteriores", isDirectory: true)
+        if fm.fileExists(atPath: account.slides.path) {
             try? fm.removeItem(at: previous)
-            try? fm.moveItem(at: folder, to: previous)
+            try? fm.moveItem(at: account.slides, to: previous)
         }
-        try? fm.createDirectory(at: folder, withIntermediateDirectories: true)
+        try? fm.createDirectory(at: account.slides, withIntermediateDirectories: true)
     }
 
-    static func pages() -> [URL] {
+    static func pages(in folder: URL) -> [URL] {
         let files = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? []
         return files.filter { $0.pathExtension.lowercased() == "html" }
             .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
     }
 
-    public static func renderAll(completion: @escaping (_ made: [URL], _ failed: Int) -> Void) {
-        let sources = pages()
+    public static func renderAll(_ account: ContentAccount, completion: @escaping (_ made: [URL], _ failed: Int) -> Void) {
+        let folder = account.slides
+        let sources = pages(in: folder)
         DispatchQueue.global(qos: .utility).async {
             guard !sources.isEmpty else {
                 Log.write("Contenido: no hay láminas en \(folder.path)")
@@ -45,7 +44,7 @@ public enum SlideRenderer {
                 let target = source.deletingPathExtension().appendingPathExtension("png")
                 if shoot(source, to: target, chrome: chrome, scratch: scratch) { made.append(target) }
             }
-            Log.write("Contenido: \(made.count) de \(sources.count) láminas convertidas en PNG")
+            Log.write("Contenido (\(account.id)): \(made.count) de \(sources.count) láminas convertidas en PNG")
             DispatchQueue.main.async { completion(made, sources.count - made.count) }
         }
     }

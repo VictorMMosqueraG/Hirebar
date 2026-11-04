@@ -12,9 +12,10 @@ extension Controller {
     seguimientos: revisa y hace seguimientos ahora
     informe: arma ya el informe semanal
     anota <texto>: guarda algo para el informe (ej: anota entrevista el jueves)
-    post: arma ya un borrador de publicación para LinkedIn (te llega aquí antes de subirlo)
-    publica: sube a LinkedIn el último borrador que te mandé
-    post cambia <qué>: rehace el borrador con tu cambio · post salta: descarta el borrador
+    post: arma ya una publicación con imágenes para cada cuenta de contenido (te llega aquí antes de subirla)
+    post <cuenta>: solo para esa cuenta (ej: post empresa)
+    publica <cuenta>: sube la publicación que te mandé (con una sola cuenta basta "publica")
+    post <cuenta> cambia <qué>: la rehace con tu cambio · post <cuenta> salta: la descarta
     envia correos: envía la lista de correos del día (o "envia correos 1 3", "no correos")
     logro <texto>: agrega un logro a tu perfil y regenera tus hojas de vida
     trabajo <texto>: registra un cambio de trabajo (ej: trabajo nuevo Backend Senior en Acme desde dic 2026)
@@ -94,13 +95,10 @@ extension Controller {
         case "corre", "correr":
             handleRunNow(rest(of: message.text))
         case "publica", "publicar":
-            let draft = Paths.linkedIn.appendingPathComponent("borrador.md")
-            guard let draftText = try? String(contentsOf: draft, encoding: .utf8),
-                  draftText.trimmingCharacters(in: .whitespacesAndNewlines).count > 20 else {
-                reply("No tengo un borrador pendiente. Escribe \"post\" para que arme uno.")
-                return
+            switch draftAccount(named: words.dropFirst().first, verb: "publica") {
+            case .found(let account): runScheduled(.linkedInPublish, manual: true, account: account.id)
+            case .problem(let text): reply(text)
             }
-            runScheduled(.linkedInPublish, manual: true)
         case "post":
             handlePost(message.text)
         case "logro", "logros":
@@ -265,19 +263,57 @@ extension Controller {
         }.joined(separator: "\n")
     }
 
+    enum AccountLookup {
+        case found(ContentAccount)
+        case problem(String)
+    }
+
+    /// Cuenta a la que se refiere un comando sobre un borrador: la nombrada, o la única que tiene borrador.
+    func draftAccount(named word: String?, verb: String, suffix: String = "") -> AccountLookup {
+        if let word, let account = ContentAccountStore.match(word) {
+            return account.hasDraft ? .found(account)
+                : .problem("\(account.title) no tiene publicación pendiente. Escribe \"post \(account.id)\" para armar una.")
+        }
+        let pending = ContentAccountStore.load().filter(\.hasDraft)
+        switch pending.count {
+        case 0: return .problem("No tengo publicaciones pendientes. Escribe \"post\" para que arme una.")
+        case 1: return .found(pending[0])
+        default:
+            let names = pending.map { "\(verb) \($0.id)\(suffix)" }.joined(separator: " · ")
+            return .problem("Hay publicaciones pendientes en varias cuentas. Dime cuál: \(names)")
+        }
+    }
+
     private func handlePost(_ raw: String) {
-        let parts = raw.trimmingCharacters(in: .whitespacesAndNewlines).split(separator: " ", maxSplits: 2).map(String.init)
-        let sub = parts.count > 1 ? parts[1].lowercased() : ""
+        var parts = raw.trimmingCharacters(in: .whitespacesAndNewlines).split(separator: " ", maxSplits: 3).map(String.init)
+        parts.removeFirst()
+        var named: ContentAccount?
+        if let first = parts.first, let account = ContentAccountStore.match(first) {
+            named = account
+            parts.removeFirst()
+        }
+        let sub = parts.first?.lowercased() ?? ""
         Paths.ensure()
-        if sub == "salta" || sub == "no" {
-            let draft = Paths.linkedIn.appendingPathComponent("borrador.md")
-            let stamp = ISO8601DateFormatter().string(from: Date()).prefix(10)
-            try? FileManager.default.moveItem(at: draft, to: Paths.linkedIn.appendingPathComponent("descartado-\(stamp)-\(Int(Date().timeIntervalSince1970)).md"))
-            reply("Listo, no se publica. El próximo borrador llega el martes (o escribe \"post\").")
+        guard sub == "salta" || sub == "no" || sub == "cambia" else {
+            runScheduled(.linkedInDraft, manual: true, account: named?.id)
             return
         }
-        let note = (sub == "cambia" && parts.count > 2) ? parts[2] : ""
-        try? note.write(to: Paths.linkedIn.appendingPathComponent("cambios.txt"), atomically: true, encoding: .utf8)
-        runScheduled(.linkedInDraft, manual: true)
+        let account: ContentAccount
+        switch draftAccount(named: named?.id, verb: "post", suffix: sub == "cambia" ? " cambia <qué>" : " salta") {
+        case .found(let found): account = found
+        case .problem(let text):
+            reply(text)
+            return
+        }
+        if sub == "cambia" {
+            let note = parts.dropFirst().joined(separator: " ")
+            try? note.write(to: account.changes, atomically: true, encoding: .utf8)
+            runScheduled(.linkedInDraft, manual: true, account: account.id)
+            return
+        }
+        let stamp = ISO8601DateFormatter().string(from: Date()).prefix(10)
+        try? FileManager.default.moveItem(at: account.draft,
+                                          to: account.folder.appendingPathComponent("descartado-\(stamp)-\(Int(Date().timeIntervalSince1970)).md"))
+        reply("Listo, no se publica en \(account.title). Escribe \"post \(account.id)\" cuando quieras otra.")
     }
 }

@@ -47,8 +47,8 @@ public enum Mode: String, Codable, CaseIterable, Sendable {
         case .prospecting: return "Buscar empresas y negocios"
         case .prospectingSend: return "Enviar correos aprobados"
         case .social: return "Buscar vacantes en redes"
-        case .linkedInDraft: return "Borrador de LinkedIn"
-        case .linkedInPublish: return "Publicar en LinkedIn"
+        case .linkedInDraft: return "Preparar publicaciones"
+        case .linkedInPublish: return "Publicar en redes"
         case .profileUpdate: return "Actualizar perfil y hojas de vida"
         case .portalScanJobs: return "Revisar tus portales de empleo"
         case .portalScanFreelance: return "Revisar tus portales freelance"
@@ -120,13 +120,16 @@ public struct Batch: Codable, Sendable {
     public var status: BatchStatus
     public var messageId: Int?
     public var result: String?
+    /// Cuenta de contenido (solo para publicaciones).
+    public var account: String?
 
-    public init(mode: Mode, items: [BatchItem] = [], status: BatchStatus, manual: Bool = false) {
-        self.id = Batch.newId(mode.batchPrefix + (manual ? "m" : ""))
+    public init(mode: Mode, items: [BatchItem] = [], status: BatchStatus, manual: Bool = false, account: String? = nil) {
+        self.id = Batch.newId(mode.batchPrefix + (manual ? "m" : "")) + (account.map { "-\($0)" } ?? "")
         self.mode = mode
         self.created = Date()
         self.items = items
         self.status = status
+        self.account = account
     }
 
     public static func newId(_ prefix: String) -> String {

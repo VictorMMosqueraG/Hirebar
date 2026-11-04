@@ -6,6 +6,7 @@ import SwiftUI
 enum SettingsPage: Hashable {
     case agent(AgentKind)
     case skills
+    case content
     case engine
 }
 
@@ -40,6 +41,11 @@ struct EditableSkill: Identifiable {
     var skill: Skill
 }
 
+struct EditableAccount: Identifiable {
+    let id = UUID()
+    var account: ContentAccount
+}
+
 struct DayOption: Identifiable {
     let id: String
     let title: String
@@ -50,6 +56,7 @@ final class SettingsModel: ObservableObject {
     @Published var sources: [String: Bool] = [:]
     @Published var skills: [EditableSkill] = []
     @Published var portals: [CustomPortal] = []
+    @Published var contentAccounts: [EditableAccount] = []
     @Published var engine = AIEngineSettings()
     @Published var engineCheck: String?
     @Published var engineCheckOK = false
@@ -65,6 +72,7 @@ final class SettingsModel: ObservableObject {
         sources = Dictionary(uniqueKeysWithValues: (Config.jobSources + Config.freelanceSources).map { ($0, config.isEnabled($0)) })
         skills = Profile.load().skills.map { EditableSkill(skill: $0) }
         portals = PortalStore.load()
+        contentAccounts = ContentAccountStore.load().map { EditableAccount(account: $0) }
         engine = Config.load().aiEngine
         engineCheck = nil
         message = nil
@@ -75,6 +83,24 @@ final class SettingsModel: ObservableObject {
         guard invalid.isEmpty else {
             message = "Revisa los portales: cada uno necesita nombre y un enlace que empiece por https://"
             return
+        }
+        var accounts: [ContentAccount] = []
+        for (index, item) in contentAccounts.enumerated() {
+            var account = item.account
+            account.id = ContentAccountStore.slug(account.id)
+            if account.id.isEmpty { account.id = ContentAccountStore.slug(account.name) }
+            if account.id.isEmpty { account.id = "cuenta-\(index + 1)" }
+            guard !accounts.contains(where: { $0.id == account.id }) else {
+                message = "Dos cuentas de contenido tienen el identificador \"\(account.id)\"; cambia uno."
+                return
+            }
+            let colors = [account.palette.background, account.palette.surface, account.palette.accent,
+                          account.palette.text, account.palette.muted]
+            guard colors.allSatisfy(Color.isHex) else {
+                message = "Revisa los colores de \(account.title): deben ser como #F07C32."
+                return
+            }
+            accounts.append(account)
         }
         for var agent in agents {
             if !portals.filter({ $0.agent == agent.id && $0.enabled }).isEmpty { agent.ensurePortalScanTask() }
@@ -96,6 +122,7 @@ final class SettingsModel: ObservableObject {
         let result: String
         do {
             try PortalStore.save(portals)
+            try ContentAccountStore.save(accounts)
             try ProfileEditor.saveSkills(skills.map(\.skill))
             result = "Guardado. Aplica desde la próxima búsqueda."
         } catch {
@@ -152,6 +179,11 @@ final class SettingsModel: ObservableObject {
             NSWorkspace.shared.activateFileViewerSelecting([Profile.url])
         case .engine:
             NSWorkspace.shared.activateFileViewerSelecting([Paths.config])
+        case .content:
+            if !FileManager.default.fileExists(atPath: ContentAccountStore.url.path) {
+                try? ContentAccountStore.save(ContentAccountStore.load())
+            }
+            NSWorkspace.shared.activateFileViewerSelecting([ContentAccountStore.url])
         case .agent(let kind):
             NSWorkspace.shared.activateFileViewerSelecting([AgentStore.url(for: kind)])
         case nil:
@@ -176,6 +208,10 @@ struct SettingsView: View {
                 Section("Perfil") {
                     Label("Habilidades", systemImage: "star.fill")
                         .tag(SettingsPage.skills)
+                }
+                Section("Contenido") {
+                    Label("Cuentas de contenido", systemImage: "photo.on.rectangle.angled")
+                        .tag(SettingsPage.content)
                 }
                 Section("General") {
                     Label("Motor de IA", systemImage: "cpu")
@@ -204,6 +240,8 @@ struct SettingsView: View {
             }
         case .skills:
             SkillsEditor(skills: $model.skills)
+        case .content:
+            ContentAccountsEditor(accounts: $model.contentAccounts)
         case .engine:
             EngineEditor(model: model)
         case nil:
@@ -326,12 +364,16 @@ struct TaskEditor: View {
 
     var body: some View {
         Section {
-            LabeledContent("Días") {
-                HStack(spacing: 4) {
-                    ForEach(Self.days) { day in
-                        Toggle(day.title, isOn: dayBinding(day.id))
-                            .toggleStyle(.button)
-                            .controlSize(.small)
+            if task.mode == .linkedInDraft {
+                LabeledContent("Días", value: "los de cada cuenta (Contenido → Cuentas de contenido)")
+            } else {
+                LabeledContent("Días") {
+                    HStack(spacing: 4) {
+                        ForEach(Self.days) { day in
+                            Toggle(day.title, isOn: dayBinding(day.id))
+                                .toggleStyle(.button)
+                                .controlSize(.small)
+                        }
                     }
                 }
             }

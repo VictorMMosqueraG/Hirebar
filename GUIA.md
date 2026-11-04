@@ -30,7 +30,7 @@ Un clic en el maletín de la barra abre el panel. Clic derecho abre el menú cl�
 | Empleo | Revisa LinkedIn, Get on Board, Computrabajo, elempleo y Magneto; descarta lo que no encaja y postula. También busca vacantes publicadas en redes. | Búsqueda cada 30 min; redes cada 2 h de 8 a. m. a 8 p. m. | Con envío automático, nada. Sin él, respondes `si`, `si 1 3` o `no` en Telegram. |
 | Freelance | Revisa Workana y Freelancer; analiza la competencia, pone precio, redacta y envía. Hace seguimientos a las 48 h. | Búsqueda cada 20 min; seguimientos 10 a. m. y 4 p. m. | Igual que Empleo. Si un cliente responde, te llega primero: contestas tú. |
 | Clientes | Busca empresas y negocios que necesitan software y les escribe por correo desde tu Gmail. | Lunes a viernes, 7 a. m. | Con envío automático, nada. Sin él, `envia correos`, `envia correos 1 3` o `no correos`. Las respuestas con interés siempre las apruebas tú. |
-| Contenido | Prepara una publicación para tu LinkedIn con texto e imágenes (carrusel). Los temas no salen de tu hoja de vida: consejos de tecnología para negocios, mitos del software, noticias de la semana y buenas prácticas. Te llega a Telegram con las imágenes. | Martes y jueves, 9 a. m. (o cuando escribas `post`, que pasa de primero en la fila). | `publica`, `post cambia <qué>` o `post salta`. Nunca publica sin tu aprobación. |
+| Contenido | Prepara publicaciones con texto e imágenes (carrusel) para cada cuenta que configures: por ejemplo, la de tu empresa en Instagram y la tuya en LinkedIn. Cada cuenta tiene su nombre, sus colores y sus días. Los temas no salen de tu hoja de vida: consejos de tecnología para negocios, mitos del software, noticias de la semana y buenas prácticas. | 9 a. m. en los días de cada cuenta, o cuando escribas `post` (pasa de primero en la fila). | `publica <cuenta>`, `post <cuenta> cambia <qué>` o `post <cuenta> salta`. Nunca publica sin tu aprobación. |
 | Perfil | Mantiene tu perfil y regenera tus hojas de vida. | Cuando se lo pides. | Ver la sección siguiente. |
 | Analista | Te manda los números de la semana de cada agente. No cambia nada. | Domingo, 6 p. m. | Leerlo y decidir qué ajustar. |
 
@@ -76,7 +76,7 @@ Todo sale de un solo archivo: `workspace/perfil.json`. De ahí se alimentan:
 - las búsquedas (tus habilidades deciden qué se avisa y qué se descarta),
 - las propuestas y postulaciones (Claude solo usa logros que estén ahí),
 - tus hojas de vida (una por tecnología),
-- las publicaciones en borrador para LinkedIn (texto e imágenes).
+- las publicaciones en borrador de cada cuenta de contenido (texto e imágenes), en `workspace/contenido/<cuenta>/`.
 
 `workspace/perfil.md` es la misma información en texto; Claude lo mantiene igual al JSON. No lo edites a mano.
 
@@ -146,6 +146,18 @@ Panel → **Ajustes**. A la izquierda, los agentes y tus habilidades. Para cada 
 - cupo diario (máximo de envíos al día que se le indica a Claude),
 - por tarea: días (L M X J V S D), horas (`10, 16`) y hasta cuántas horas tarde puede correr si el Mac estaba dormido.
 
+### Cuentas de contenido
+
+Ajustes → **Cuentas de contenido**. Agrega una cuenta por cada perfil donde quieras publicar (por ejemplo, `empresa` en Instagram y `personal` en LinkedIn). Para cada una:
+- **Identificador**: el nombre corto que usas en Telegram (`post empresa`, `publica empresa`).
+- **Red**: LinkedIn o Instagram.
+- **Nombre en las imágenes**, **línea bajo el nombre** y **usuario**: la firma de cada imagen. Si alguien más baja el repo, pone aquí su propio nombre.
+- **De qué habla y para quién**: el enfoque de los temas.
+- **Días**: cuándo se prepara la publicación sola (a la hora de la tarea del agente Contenido).
+- **Paleta**: escoge una lista (por ejemplo, "Negro y naranja") o pon tus colores en hexadecimal. **Estilo de las imágenes** describe en palabras cómo se ven (letras, detalles). La vista previa muestra cómo quedan.
+
+Quedan guardadas en `workspace/contenido/cuentas.json`.
+
 **Guardar** (⌘S) aplica desde la próxima búsqueda. **Descartar** deshace lo que no guardaste. **Mostrar archivo** te lleva al JSON de ese agente.
 
 ## Comandos de Telegram
@@ -159,7 +171,7 @@ Panel → **Ajustes**. A la izquierda, los agentes y tus habilidades. Para cada 
 | Envío automático | `auto si` · `auto no` · `auto empleo no` · `auto clientes si` |
 | Aprobar o descartar una lista | `si` · `si 1 3` · `no` (o los botones del mensaje) |
 | Correos del día | `envia correos` · `envia correos 1 3` · `no correos` |
-| LinkedIn | `post` · `post cambia <qué>` · `post salta` · `publica` |
+| Contenido | `post` · `post <cuenta>` · `post <cuenta> cambia <qué>` · `post <cuenta> salta` · `publica <cuenta>` (con una sola cuenta no hace falta nombrarla) |
 | Perfil | `logro …` · `trabajo …` · `habilidad <nombre> <nivel>` · `habilidades` · `hv` |
 | Nota para el análisis del domingo | `anota entrevista con Acme el jueves` |
 

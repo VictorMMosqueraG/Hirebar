@@ -186,7 +186,7 @@ public struct AgentSettings: Codable, Sendable {
             return AgentSettings(id: .content, name: "Contenido",
                                  purpose: "Prepara publicaciones para redes; nada se publica sin tu aprobación.",
                                  enabled: true, autoApprove: false,
-                                 tasks: [AgentTask(mode: .linkedInDraft, hours: [9], days: ["mar", "jue"], windowHours: 12)])
+                                 tasks: [AgentTask(mode: .linkedInDraft, hours: [9], days: ["todos"], windowHours: 12)])
         case .profile:
             return AgentSettings(id: .profile, name: "Perfil",
                                  purpose: "Mantiene tu perfil al día y regenera tus hojas de vida cuando se lo pides.",
@@ -210,7 +210,16 @@ public enum AgentStore {
     public static func load(_ kind: AgentKind) -> AgentSettings {
         guard let data = try? Data(contentsOf: url(for: kind)) else { return AgentSettings.defaults(for: kind, config: Config.load()) }
         do {
-            return try JSONDecoder().decode(AgentSettings.self, from: data)
+            var settings = try JSONDecoder().decode(AgentSettings.self, from: data)
+            if kind == .content {
+                // Los días de las publicaciones se eligen en cada cuenta; la tarea corre todos los días.
+                settings.tasks = settings.tasks.map { task in
+                    var task = task
+                    if task.mode == .linkedInDraft { task.days = ["todos"] }
+                    return task
+                }
+            }
+            return settings
         } catch {
             Log.write("agentes/\(kind.rawValue).json tiene un error (\(error.localizedDescription)); se usa la configuración por defecto")
             return AgentSettings.defaults(for: kind, config: Config.load())

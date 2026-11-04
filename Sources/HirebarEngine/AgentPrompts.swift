@@ -23,13 +23,16 @@ enum AgentPrompts {
             perfiles ni configuración, y no propongas cambios automáticos; \(owner) decide qué ajustar.
             """
         case .linkedInDraft:
-            let note = (try? String(contentsOf: Paths.linkedIn.appendingPathComponent("cambios.txt"), encoding: .utf8))?
+            let account = ContentAccountStore.find(batch.account) ?? ContentAccountStore.defaultAccount()
+            let note = (try? String(contentsOf: account.changes, encoding: .utf8))?
                 .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            try? FileManager.default.removeItem(at: account.changes)
             let change = note.isEmpty ? "" : "\n\nCambio que pidió \(owner) sobre el borrador anterior: \(note)"
             return """
-            Contenido \(batch.id) (\(now)). Prepara la publicación según tus instrucciones: el texto en \
-            linkedin/borrador.md y las imágenes como HTML de 1080×1350 en linkedin/laminas/. El tema NO sale de \
-            la hoja de vida ni de los logros de \(owner). NO publiques nada: \(owner) la aprueba primero desde Telegram.\(change)
+            Contenido \(batch.id) (\(now)). Prepara UNA publicación para esta cuenta según tus instrucciones. \
+            NO publiques nada: \(owner) la aprueba primero desde Telegram.
+
+            \(accountSheet(account))\(change)
             """
         case .prospecting:
             return """
@@ -50,10 +53,12 @@ enum AgentPrompts {
             \(browser) Si no hay nada nuevo, responde solo \(Controller.noNewsMarker).
             """
         case .linkedInPublish:
+            let account = ContentAccountStore.find(batch.account) ?? ContentAccountStore.defaultAccount()
             return """
-            Publicar LinkedIn \(batch.id) (\(now)). \(owner) respondió "publica" en Telegram: publica en su LinkedIn \
-            EXACTAMENTE el texto de linkedin/borrador.md con las imágenes de linkedin/laminas/ (los .png, en orden), \
-            según tus instrucciones. \(browser)
+            Publicar \(batch.id) (\(now)). \(owner) respondió "publica" en Telegram: publica en \(account.network.title) \
+            (cuenta \(account.handle.isEmpty ? account.title : account.handle)) EXACTAMENTE el texto de \
+            \(account.relativeFolder)/borrador.md con las imágenes de \(account.relativeFolder)/laminas/ (los .png, en orden), \
+            según tus instrucciones. Antes de publicar, revisa que la sesión abierta sea la de esa cuenta. \(browser)
             """
         case .portalScanJobs, .portalScanFreelance:
             let agent: AgentKind = batch.mode == .portalScanJobs ? .jobs : .freelance
@@ -96,6 +101,23 @@ enum AgentPrompts {
         }
     }
 
+    /// Ficha de la cuenta de contenido que va en el mensaje a la IA.
+    static func accountSheet(_ account: ContentAccount) -> String {
+        let p = account.palette
+        let name = account.name.trimmingCharacters(in: .whitespaces)
+        return """
+        Cuenta: \(account.id)
+        Carpeta: \(account.relativeFolder)/ (borrador.md, laminas/, temas.md)
+        Red: \(account.network.title)
+        Nombre que firma las imágenes: \(name.isEmpty ? "(sin nombre: no pongas firma)" : name)
+        Línea bajo el nombre: \(account.tagline.isEmpty ? "(ninguna)" : account.tagline)
+        Usuario: \(account.handle.isEmpty ? "(ninguno)" : account.handle)
+        De qué habla y para quién: \(account.focus)
+        Paleta: fondo \(p.background), superficie \(p.surface), acento \(p.accent), texto \(p.text), texto secundario \(p.muted)
+        Estilo de las imágenes: \(account.style)
+        """
+    }
+
     static func statusText(for mode: Mode, count: Int, since hour: String) -> String {
         switch mode {
         case .followUp: return "revisando seguimientos (desde \(hour))"
@@ -103,8 +125,8 @@ enum AgentPrompts {
         case .prospecting: return "buscando empresas y negocios (desde \(hour))"
         case .prospectingSend: return "enviando correos aprobados (desde \(hour))"
         case .social: return "buscando en redes (desde \(hour))"
-        case .linkedInDraft: return "preparando la publicación con imágenes (desde \(hour))"
-        case .linkedInPublish: return "publicando en LinkedIn (desde \(hour))"
+        case .linkedInDraft: return "preparando una publicación con imágenes (desde \(hour))"
+        case .linkedInPublish: return "publicando en redes (desde \(hour))"
         case .jobs: return "haciendo \(count) postulaciones (desde \(hour))"
         case .freelance: return "haciendo \(count) propuestas (desde \(hour))"
         case .profileUpdate: return "actualizando tu perfil y hojas de vida (desde \(hour))"
