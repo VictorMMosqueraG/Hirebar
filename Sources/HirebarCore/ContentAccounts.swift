@@ -76,11 +76,13 @@ public struct ContentAccount: Codable, Identifiable, Equatable, Sendable {
     public var days: [String]
     /// Además del carrusel, un video vertical corto (Reel o Short).
     public var video: Bool
+    /// Voz del video (nombre de una voz en español de macOS); vacío = la mejor disponible.
+    public var voice: String
 
     public init(id: String, enabled: Bool = true, network: ContentNetwork = .linkedin, name: String = "",
                 tagline: String = "", handle: String = "", focus: String = ContentAccount.defaultFocus,
                 style: String = PalettePreset.standard.style, palette: ContentPalette = PalettePreset.standard.palette,
-                days: [String] = ["mar", "jue"], video: Bool = false) {
+                days: [String] = ["mar", "jue"], video: Bool = false, voice: String = "") {
         self.id = id
         self.enabled = enabled
         self.network = network
@@ -92,6 +94,7 @@ public struct ContentAccount: Codable, Identifiable, Equatable, Sendable {
         self.palette = palette
         self.days = days
         self.video = video
+        self.voice = voice
     }
 
     public init(from decoder: Decoder) throws {
@@ -108,6 +111,7 @@ public struct ContentAccount: Codable, Identifiable, Equatable, Sendable {
         palette = try c.decodeIfPresent(ContentPalette.self, forKey: .palette) ?? base.palette
         days = try c.decodeIfPresent([String].self, forKey: .days) ?? base.days
         video = try c.decodeIfPresent(Bool.self, forKey: .video) ?? base.video
+        voice = try c.decodeIfPresent(String.self, forKey: .voice) ?? base.voice
     }
 
     public static let defaultFocus = "Consejos de tecnología para negocios, mitos del software, noticias de la semana y buenas prácticas para desarrolladores. Para dueños de negocio, emprendedores y otros desarrolladores."
@@ -122,6 +126,12 @@ public struct ContentAccount: Codable, Identifiable, Equatable, Sendable {
     public var draft: URL { folder.appendingPathComponent("borrador.md") }
     /// Escenas del video (HTML de 1080×1920), su guion y el video armado (reel.mp4).
     public var videoFolder: URL { folder.appendingPathComponent("video", isDirectory: true) }
+
+    /// Música de fondo opcional: un archivo musica.mp3, musica.m4a o musica.wav en la carpeta de la cuenta.
+    public var music: URL? {
+        ["mp3", "m4a", "wav", "aiff"].map { folder.appendingPathComponent("musica.\($0)") }
+            .first { FileManager.default.fileExists(atPath: $0.path) }
+    }
     public var changes: URL { folder.appendingPathComponent("cambios.txt") }
 
     /// Ruta relativa al workspace, para indicársela a la IA.

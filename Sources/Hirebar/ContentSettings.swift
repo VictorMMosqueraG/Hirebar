@@ -1,5 +1,6 @@
 import AppKit
 import HirebarCore
+import HirebarEngine
 import SwiftUI
 
 /// Ajustes → Cuentas de contenido: una sección por cuenta (empresa, personal…), cada una con su red, nombre, días y paleta.
@@ -32,6 +33,7 @@ struct ContentAccountSection: View {
     @Binding var account: ContentAccount
     let canRemove: Bool
     let onRemove: () -> Void
+    @State private var voices: [String] = []
 
     var body: some View {
         Section {
@@ -46,7 +48,20 @@ struct ContentAccountSection: View {
             TextField("De qué habla y para quién", text: $account.focus, axis: .vertical)
                 .lineLimit(2...5)
             LabeledContent("Días") { DaysPicker(days: $account.days) }
-            Toggle("También un video corto (Reel o Short)", isOn: $account.video)
+            Toggle("También un video corto con voz (Reel o Short)", isOn: $account.video)
+            if account.video {
+                Picker("Voz del video", selection: $account.voice) {
+                    Text("La mejor disponible").tag("")
+                    ForEach(voices, id: \.self) { Text($0).tag($0) }
+                    if !account.voice.isEmpty && !voices.contains(account.voice) {
+                        Text("\(account.voice) (no instalada)").tag(account.voice)
+                    }
+                }
+                .onAppear { if voices.isEmpty { voices = SpeechVoices.spanishNames() } }
+                Text("Las voces \"Mejorada\" o \"Premium\" suenan más naturales. Se descargan gratis en Ajustes del Sistema → Accesibilidad → Contenido leído → Voz del sistema → Gestionar voces → Español. Para música de fondo, pon un archivo musica.mp3 en la carpeta de la cuenta (workspace/contenido/\(account.id)/).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             Picker("Paleta", selection: preset) {
                 Text("Personalizada").tag("")

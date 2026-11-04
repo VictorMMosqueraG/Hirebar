@@ -138,7 +138,11 @@ public final class Telegram: @unchecked Sendable {
             for (index, file) in files.enumerated() {
                 var fields = ["chat_id": String(chatId)]
                 if index == 0 && !caption.isEmpty { fields["caption"] = String(caption.prefix(1000)) }
-                let result = Net.postMultipart(url, fields: fields, fileField: "photo", file: file)
+                var result = Net.postMultipart(url, fields: fields, fileField: "photo", file: file)
+                for _ in 0..<2 where (result?["ok"] as? Bool) != true {
+                    Thread.sleep(forTimeInterval: 3)
+                    result = Net.postMultipart(url, fields: fields, fileField: "photo", file: file)
+                }
                 if (result?["ok"] as? Bool) != true {
                     Log.write("Telegram: no se pudo enviar la imagen \(file.lastPathComponent) (\(result?["description"] ?? "sin respuesta"))")
                 }
@@ -155,7 +159,11 @@ public final class Telegram: @unchecked Sendable {
         }
         let fields = ["chat_id": String(chatId), "caption": String(caption.prefix(1000)), "supports_streaming": "true"]
         DispatchQueue.global(qos: .utility).async {
-            let result = Net.postMultipart(url, fields: fields, fileField: "video", file: file, timeout: 300)
+            var result = Net.postMultipart(url, fields: fields, fileField: "video", file: file, timeout: 300)
+            if (result?["ok"] as? Bool) != true {
+                Thread.sleep(forTimeInterval: 5)
+                result = Net.postMultipart(url, fields: fields, fileField: "video", file: file, timeout: 300)
+            }
             if (result?["ok"] as? Bool) != true {
                 Log.write("Telegram: no se pudo enviar el video \(file.lastPathComponent) (\(result?["description"] ?? "sin respuesta"))")
             }

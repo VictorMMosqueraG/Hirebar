@@ -43,14 +43,36 @@ En estas reglas, `<carpeta>` es la carpeta de la ficha (por ejemplo `contenido/e
 ## 4. Si hay un cambio pedido
 Si el mensaje trae un "Cambio que pidió…", aplícalo sobre el borrador anterior: el texto está en `<carpeta>/`, las imágenes anteriores en `<carpeta>/laminas-anteriores/` y el video anterior en `<carpeta>/video-anterior/`. Deja la publicación completa otra vez: texto, imágenes y video si lo lleva.
 
-## 5. Video corto (solo si la ficha dice "Video corto: SÍ")
-Un video vertical de 15 a 30 segundos sobre el MISMO tema del carrusel. No es una copia de las láminas: es más corto y directo. Hirebar lo arma en MP4 a partir de tus escenas: cada escena se queda quieta con un acercamiento suave y pasa a la siguiente con un fundido. No lleva sonido; la música se pone al publicar.
-- Escenas en `<carpeta>/video/`: `escena-1.html`, `escena-2.html`… (de 4 a 7).
-- Cada escena mide EXACTAMENTE 1080×1920 px: `html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; }`. Mismas reglas de archivo, fuentes y paleta que las imágenes.
-- `<carpeta>/video/guion.json` con el orden y los segundos de cada escena, por ejemplo: `{"escenas": [{"archivo": "escena-1.html", "segundos": 2.5}, {"archivo": "escena-2.html", "segundos": 4}]}`. Entre 2 y 5 segundos por escena: lo suficiente para leerla con calma.
-- Escena 1: el gancho, en máximo 8 palabras y letra enorme (100 px o más). Escenas del medio: una idea por escena, máximo 15 palabras. Última escena: la invitación ("síguenos", "escríbenos al DM") con el usuario de la ficha.
-- Instagram tapa la parte de arriba y la de abajo con sus botones: deja libres los 250 px de arriba y los 420 px de abajo, y 120 px a la derecha. El texto importante va en el centro.
-- `<carpeta>/video/texto.md`: la descripción del video, entre 20 y 60 palabras, con 3 a 5 hashtags.
+## 5. Short con voz (solo si la ficha dice "Video corto: SÍ")
+Un video vertical de 20 a 40 segundos hecho para ganar seguidores en Reels, Shorts y TikTok. NO es una copia del carrusel: escoge la idea que más enganche (puede ser otro tema de la lista) y cuéntala como un video. Regístralo en `<carpeta>/temas.md` con el tipo "short".
 
-## Respuesta final (va a Telegram)
-Primera línea: el nombre de la cuenta y la red. Después, el texto completo, tal como se publicaría. Hirebar manda las imágenes justo después.
+Hirebar arma el video así: pone una voz en español a la narración de cada escena, y la escena dura lo que dura su voz. Encima dibuja subtítulos grandes palabra por palabra, en el centro de la pantalla (entre 1150 y 1450 px desde arriba). Cada escena entra con un pequeño rebote, se acerca despacio y se funde con la siguiente.
+
+### Guion
+- **Gancho (escena 1, máximo 2 segundos de voz):** una frase que frene el dedo. Puede ser una promesa ("3 señales de que tu sistema te está haciendo perder plata"), una contradicción ("Tu app no es lenta por el servidor"), un error común ("Si guardas las contraseñas así, tienes un problema") o una pregunta directa. Nada de "Hola" ni presentaciones.
+- **Desarrollo:** de 3 a 5 escenas, una idea por escena, con ejemplos concretos y números si los hay (sin inventar). Cada escena dice algo nuevo; si una frase se puede quitar, quítala.
+- **Cierre:** una frase que deje la idea clara y una invitación corta ("Síguenos para más", "Escríbenos 'SISTEMA' al DM"). Si se puede, que el final conecte con el inicio para que se vea otra vez.
+- **Narración:** español neutro, como si se lo contaras a un amigo; frases cortas de 6 a 14 palabras; nada de siglas sin explicar. Entre 60 y 100 palabras en total. Escribe los números y símbolos como se dicen ("tres", "por ciento", "punto com") para que la voz los lea bien.
+
+### Escenas (`<carpeta>/video/escena-N.html`, de 5 a 8)
+- Cada escena mide EXACTAMENTE 1080×1920 px: `html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; }`. Mismas reglas de archivo, fuentes y paleta que las imágenes.
+- Son lo que se VE mientras la voz habla, no el texto de la voz (el subtítulo ya lo pone Hirebar). Cambia el tipo de visual en cada escena para que no se vuelva monótono:
+  - una palabra o un número gigante (200 px o más);
+  - emojis grandes como íconos (por ejemplo 🚨 💸 ⚡ ✅ ❌), que salen en color;
+  - maquetas dibujadas con HTML y CSS: una pantalla de celular, una ventana de código con colores, un mensaje de error, un gráfico de barras, una factura, un antes y después, un ✅ contra un ❌;
+  - una lista corta que se completa, o una flecha que señala el punto clave.
+- Zonas: el contenido visual va entre 280 y 1120 px desde arriba. Deja libre la franja de 1150 a 1450 px (ahí van los subtítulos), los 250 px de arriba y los 420 px de abajo (ahí Instagram pone sus botones). Deja también 120 px libres a la derecha.
+- La escena 1 tiene que verse llamativa incluso sin sonido: contraste fuerte, el elemento principal enorme.
+- La última escena lleva el nombre y el usuario de la ficha bien visibles.
+
+### `<carpeta>/video/guion.json`
+```json
+{"escenas": [
+  {"archivo": "escena-1.html", "texto": "Tu app no es lenta por el servidor."},
+  {"archivo": "escena-2.html", "texto": "En el noventa por ciento de los casos, el problema está en la base de datos."}
+]}
+```
+"texto" es exactamente lo que dice la voz en esa escena (de 3 a 20 palabras).
+
+### `<carpeta>/video/texto.md`
+La descripción del video: un título que dé curiosidad en la primera línea, una o dos frases más, una invitación a comentar o a seguir la cuenta, y de 3 a 5 hashtags.
