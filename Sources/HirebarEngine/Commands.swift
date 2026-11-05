@@ -16,6 +16,7 @@ extension Controller {
     post <cuenta>: solo para esa cuenta (ej: post empresa)
     publica <cuenta>: sube la publicación que te mandé (con una sola cuenta basta "publica")
     post <cuenta> cambia <qué>: la rehace con tu cambio · post <cuenta> salta: la descarta
+    video <cuenta>: vuelve a armar y mandar el video con las escenas que ya hizo la IA (sin gastar IA)
     envia correos: envía la lista de correos del día (o "envia correos 1 3", "no correos")
     logro <texto>: agrega un logro a tu perfil y regenera tus hojas de vida
     trabajo <texto>: registra un cambio de trabajo (ej: trabajo nuevo Backend Senior en Acme desde dic 2026)
@@ -101,6 +102,8 @@ extension Controller {
             }
         case "post":
             handlePost(message.text)
+        case "video":
+            rebuildVideo(words.dropFirst().first)
         case "logro", "logros":
             requestProfileChange("Logro", rest(of: message.text), example: "logro bajé el costo de AWS 20% en KoralAT")
         case "trabajo":
@@ -281,6 +284,33 @@ extension Controller {
         default:
             let names = pending.map { "\(verb) \($0.id)\(suffix)" }.joined(separator: " · ")
             return .problem("Hay publicaciones pendientes en varias cuentas. Dime cuál: \(names)")
+        }
+    }
+
+    /// Arma otra vez el video de una cuenta con las escenas y el guion que ya existen.
+    private func rebuildVideo(_ word: String?) {
+        let withScenes = ContentAccountStore.load().filter {
+            FileManager.default.fileExists(atPath: $0.videoFolder.appendingPathComponent("guion.json").path)
+        }
+        let account: ContentAccount
+        if let word, let named = ContentAccountStore.match(word) {
+            account = named
+        } else if withScenes.count == 1 {
+            account = withScenes[0]
+        } else if withScenes.isEmpty {
+            reply("No hay escenas de video guardadas. Escribe \"post <cuenta>\" con el video prendido en esa cuenta.")
+            return
+        } else {
+            reply("¿De cuál cuenta? " + withScenes.map { "video \($0.id)" }.joined(separator: " · "))
+            return
+        }
+        reply("Armando el video de \(account.title) con las escenas que ya están; tarda unos minutos.")
+        ReelRenderer.render(account) { [weak self] video, problem in
+            guard let video else {
+                self?.reply("No salió el video: \(problem ?? "sin detalle").")
+                return
+            }
+            Notifier.sendVideo(video, caption: "\(account.title): video corto (Reel)" + (problem.map { " · ojo: \($0)" } ?? "")) {}
         }
     }
 

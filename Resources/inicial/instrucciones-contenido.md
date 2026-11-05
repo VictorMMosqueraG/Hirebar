@@ -43,27 +43,34 @@ En estas reglas, `<carpeta>` es la carpeta de la ficha (por ejemplo `contenido/e
 ## 4. Si hay un cambio pedido
 Si el mensaje trae un "Cambio que pidió…", aplícalo sobre el borrador anterior: el texto está en `<carpeta>/`, las imágenes anteriores en `<carpeta>/laminas-anteriores/` y el video anterior en `<carpeta>/video-anterior/`. Deja la publicación completa otra vez: texto, imágenes y video si lo lleva.
 
-## 5. Short con voz (solo si la ficha dice "Video corto: SÍ")
-Un video vertical de 20 a 40 segundos hecho para ganar seguidores en Reels, Shorts y TikTok. NO es una copia del carrusel: escoge la idea que más enganche (puede ser otro tema de la lista) y cuéntala como un video. Regístralo en `<carpeta>/temas.md` con el tipo "short".
+## 5. Short animado con voz (solo si la ficha dice "Video corto: SÍ")
+Un video vertical de 20 a 40 segundos hecho para ganar seguidores en Reels, Shorts y TikTok. Es un video ANIMADO: todo se mueve al ritmo de la voz, como los reels de "motion graphics" (tarjetas que entran, ventanas de apps, contadores, flechas, palabras que aparecen). NO es una copia del carrusel: escoge la idea que más enganche (puede ser otro tema de la lista) y cuéntala como un video. Regístralo en `<carpeta>/temas.md` con el tipo "short".
 
-Hirebar arma el video así: pone una voz en español a la narración de cada escena, y la escena dura lo que dura su voz. Encima dibuja subtítulos grandes palabra por palabra, en el centro de la pantalla (entre 1150 y 1450 px desde arriba). Cada escena entra con un pequeño rebote, se acerca despacio y se funde con la siguiente.
+Cómo lo arma Hirebar: pone voz a la narración de cada escena, y la escena dura lo que dura su voz (te lo pasa en la variable CSS `--dur`, en segundos). Después graba cada escena HTML cuadro por cuadro, 30 por segundo, llevando tus animaciones CSS al instante exacto de cada cuadro. Si la ficha pide subtítulos, los dibuja encima, palabra por palabra, en la franja de 1150 a 1450 px desde arriba. Entre escenas hay un corte directo, así que cada escena tiene que entrar con su propia animación.
 
 ### Guion
-- **Gancho (escena 1, máximo 2 segundos de voz):** una frase que frene el dedo. Puede ser una promesa ("3 señales de que tu sistema te está haciendo perder plata"), una contradicción ("Tu app no es lenta por el servidor"), un error común ("Si guardas las contraseñas así, tienes un problema") o una pregunta directa. Nada de "Hola" ni presentaciones.
-- **Desarrollo:** de 3 a 5 escenas, una idea por escena, con ejemplos concretos y números si los hay (sin inventar). Cada escena dice algo nuevo; si una frase se puede quitar, quítala.
+- **Gancho (escena 1, máximo 2 segundos de voz):** una frase que frene el dedo. Puede ser una promesa ("3 señales de que tu sistema te está haciendo perder plata"), una contradicción ("Tu app no es lenta por el servidor"), un error común ("Si guardas las contraseñas así, tienes un problema") o "te voy a mostrar…". Nada de "Hola" ni presentaciones.
+- **Desarrollo:** de 3 a 5 escenas, una idea por escena, con ejemplos concretos y números si los hay (sin inventar). Si son pasos, numéralos ("paso 1 de 3"). Cada escena dice algo nuevo; si una frase se puede quitar, quítala.
 - **Cierre:** una frase que deje la idea clara y una invitación corta ("Síguenos para más", "Escríbenos 'SISTEMA' al DM"). Si se puede, que el final conecte con el inicio para que se vea otra vez.
-- **Narración:** español neutro, como si se lo contaras a un amigo; frases cortas de 6 a 14 palabras; nada de siglas sin explicar. Entre 60 y 100 palabras en total. Escribe los números y símbolos como se dicen ("tres", "por ciento", "punto com") para que la voz los lea bien.
+- **Narración:** español neutro, con energía, como si se lo contaras a un amigo; frases cortas de 6 a 14 palabras; nada de siglas sin explicar. Entre 60 y 100 palabras en total. Escribe los números y símbolos como se dicen ("tres", "por ciento", "punto com") para que la voz los lea bien.
 
-### Escenas (`<carpeta>/video/escena-N.html`, de 5 a 8)
-- Cada escena mide EXACTAMENTE 1080×1920 px: `html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; }`. Mismas reglas de archivo, fuentes y paleta que las imágenes.
-- Son lo que se VE mientras la voz habla, no el texto de la voz (el subtítulo ya lo pone Hirebar). Cambia el tipo de visual en cada escena para que no se vuelva monótono:
-  - una palabra o un número gigante (200 px o más);
-  - emojis grandes como íconos (por ejemplo 🚨 💸 ⚡ ✅ ❌), que salen en color;
-  - maquetas dibujadas con HTML y CSS: una pantalla de celular, una ventana de código con colores, un mensaje de error, un gráfico de barras, una factura, un antes y después, un ✅ contra un ❌;
-  - una lista corta que se completa, o una flecha que señala el punto clave.
-- Zonas: el contenido visual va entre 280 y 1120 px desde arriba. Deja libre la franja de 1150 a 1450 px (ahí van los subtítulos), los 250 px de arriba y los 420 px de abajo (ahí Instagram pone sus botones). Deja también 120 px libres a la derecha.
-- La escena 1 tiene que verse llamativa incluso sin sonido: contraste fuerte, el elemento principal enorme.
+### Escenas animadas (`<carpeta>/video/escena-N.html`, de 5 a 8)
+- Cada escena mide EXACTAMENTE 1080×1920 px: `html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; }`. Usa los colores de la paleta y el estilo de la ficha, las mismas fuentes del sistema que las imágenes, y nada externo (ni imágenes de internet, ni librerías, ni fuentes web).
+- **Cómo animar (obligatorio):** solo con CSS: `@keyframes` + `animation`, con `animation-fill-mode: both`. NADA de `setTimeout`, `setInterval`, `requestAnimationFrame`, `transition` disparadas por JavaScript, GSAP ni otras librerías: Hirebar mueve el reloj de las animaciones CSS y lo demás no se vería.
+  - Ritmo: reparte las entradas a lo largo de la escena con `animation-delay` en función de la duración, por ejemplo `animation-delay: calc(var(--dur) * 0.35s)`. Que algo se vea desde el segundo 0 (la escena nunca empieza vacía) y que todo esté en pantalla antes de `calc(var(--dur) * 0.8s)`.
+  - Para contadores o texto que se escribe letra por letra puedes definir `window.onFrame = function (t, dur) { … }`: Hirebar la llama en cada cuadro con el segundo actual. Es la única forma permitida de usar JavaScript.
+- **Qué animar (que nunca se quede quieta):**
+  - titular grande que entra palabra por palabra (desliza desde abajo, aparece con desenfoque o con un "pop" que crece un poco y vuelve a su tamaño), con la palabra clave en el color de acento o en serif cursiva;
+  - tarjetas, carpetas, ventanas de app o pantallas de celular dibujadas con HTML y CSS que entran deslizando, se apilan o se abren;
+  - un cursor que se mueve y "hace clic", un botón que se presiona, un ✅ que aparece, un ❌ que tacha;
+  - una línea o flecha que se dibuja (SVG con `stroke-dasharray` y `stroke-dashoffset`), un círculo que encierra lo importante;
+  - números que suben (con `onFrame`), barras de gráfico que crecen, una barra de progreso;
+  - un contador de pasos ("paso 2 · 3") en una esquina, y detalles de fondo que se mueven suave (puntos, líneas, una cuadrícula que se desplaza) para que la escena se sienta viva;
+  - emojis grandes como íconos (🚨 💸 ⚡ ✅ ❌), que salen en color.
+- **Zonas:** lo importante va entre 280 y 1120 px desde arriba (y hasta 1450 px si la ficha dice que no hay subtítulos). Deja libres los 250 px de arriba, los 420 px de abajo y 120 px a la derecha: ahí van los botones de Instagram. Si hay subtítulos, deja libre la franja de 1150 a 1450 px.
+- La escena 1 tiene que verse llamativa desde el primer cuadro, incluso sin sonido: contraste fuerte, el elemento principal enorme y ya en movimiento.
 - La última escena lleva el nombre y el usuario de la ficha bien visibles.
+- Revisa cada escena como si fuera el cuadro final (todo en pantalla): que nada se salga ni quede tapado.
 
 ### `<carpeta>/video/guion.json`
 ```json
@@ -72,7 +79,7 @@ Hirebar arma el video así: pone una voz en español a la narración de cada esc
   {"archivo": "escena-2.html", "texto": "En el noventa por ciento de los casos, el problema está en la base de datos."}
 ]}
 ```
-"texto" es exactamente lo que dice la voz en esa escena (de 3 a 20 palabras).
+"texto" es exactamente lo que dice la voz en esa escena (de 3 a 20 palabras). Lo que se ve en la escena tiene que acompañar lo que dice la voz en ese momento.
 
 ### `<carpeta>/video/texto.md`
 La descripción del video: un título que dé curiosidad en la primera línea, una o dos frases más, una invitación a comentar o a seguir la cuenta, y de 3 a 5 hashtags.

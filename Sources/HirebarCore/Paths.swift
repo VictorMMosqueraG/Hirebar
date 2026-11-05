@@ -47,7 +47,8 @@ public enum Paths {
     static let previousVersions: [String: Set<String>] = [
         "instrucciones-contenido.md": ["7d0570183da32781761a75b9ababc55aeaa9984431225a254c776db5ee110bc5",
                                        "8e4506f6384978408a6401c874ef9f7d6c4c254db55e0bac75cbeeb146b2f1c6",
-                                       "32e5749cf889a58515410d93904e90464474944056d3695cba4f66f88a6c8af2"],
+                                       "32e5749cf889a58515410d93904e90464474944056d3695cba4f66f88a6c8af2",
+                                       "fe003991a2ae9ea1b25b737cde0fc1a6e1e75bb8213caf2c96f22b4b2ed3e292"],
         "instrucciones-contenido-publicar.md": ["c84254fb1ade7117e9289e504c73a1851d07b9912eaf9c6aca9eb170c6b8ae5d",
                                                 "d83f1e8d47fbe59cb06c9e46ffd55282531b6d37b91fbd824159b2a381d63de5"],
     ]

@@ -115,7 +115,7 @@ enum AgentPrompts {
         De qué habla y para quién: \(account.focus)
         Paleta: fondo \(p.background), superficie \(p.surface), acento \(p.accent), texto \(p.text), texto secundario \(p.muted)
         Estilo de las imágenes: \(account.style)
-        Video corto: \(account.video ? "SÍ. Además del carrusel, prepara un Short con voz (sección 5 de tus instrucciones) en \(account.relativeFolder)/video/. Es un video independiente, pensado para ganar audiencia, NO una copia del carrusel." : "no")
+        Video corto: \(account.video ? "SÍ. Además del carrusel, prepara un Short con voz (sección 5 de tus instrucciones) en \(account.relativeFolder)/video/. Es un video ANIMADO e independiente, pensado para ganar audiencia, NO una copia del carrusel. Subtítulos de Hirebar: \(account.captions ? "sí (deja libre su franja)" : "no (el texto clave va animado dentro de cada escena)")." : "no")
         """
     }
 

@@ -154,8 +154,14 @@ Ajustes → **Cuentas de contenido**. Agrega una cuenta por cada perfil donde qu
 - **Nombre en las imágenes**, **línea bajo el nombre** y **usuario**: la firma de cada imagen. Si alguien más baja el repo, pone aquí su propio nombre.
 - **De qué habla y para quién**: el enfoque de los temas.
 - **Días**: cuándo se prepara la publicación sola (a la hora de la tarea del agente Contenido).
-- **También un video corto con voz (Reel o Short)**: además del carrusel llega a Telegram un Short de 20 a 40 segundos pensado para ganar audiencia (no es copia del carrusel): gancho en el primer segundo, voz en español, subtítulos grandes palabra por palabra, escenas que cambian rápido y cierre con invitación. Hirebar lo arma en tu Mac sin instalar nada.
-  - **Voz del video**: escoge una voz en español del Mac. Las "Mejorada" o "Premium" suenan más naturales y se descargan gratis en Ajustes del Sistema → Accesibilidad → Contenido leído → Voz del sistema → Gestionar voces → Español.
+- **También un video corto con voz (Reel o Short)**: además del carrusel llega a Telegram un Short ANIMADO de 20 a 40 segundos pensado para ganar audiencia (no es copia del carrusel). Todo se mueve al ritmo de la voz: titulares que entran palabra por palabra, tarjetas y ventanas de apps, flechas que se dibujan, contadores. Lleva gancho en el primer segundo y cierre con invitación. Hirebar lo graba cuadro por cuadro en tu Mac.
+  - **Motor de voz**:
+    - **Voces neuronales de Microsoft (por defecto)**: naturales, con acento colombiano (Gonzalo), sin cuenta ni clave. Hirebar instala solo la herramienta `edge-tts` la primera vez. Usa el servicio de lectura del navegador Edge de forma no oficial: si algún día deja de responder, el video sale con la voz del Mac y queda anotado en el registro.
+    - **Microsoft Azure**: voces neuronales naturales, con acento colombiano (por defecto, Gonzalo). El plan gratis F0 da medio millón de caracteres al mes y permite uso comercial. En portal.azure.com crea un recurso de "Voz" (Speech) con el plan F0, copia la Clave 1 y la región, y pégalas al final de la página de Cuentas de contenido.
+    - **ElevenLabs**: las voces más expresivas, pero el plan gratis no permite uso comercial (desde el plan Starter sí). Con clave, el botón "Escoger la mejor voz para Shorts" busca la voz en español latino más usada para redes.
+    - **Voces del Mac**: gratis y sin cuentas, pero suenan robóticas.
+    - Las claves quedan en el Llavero del Mac, no en archivos.
+  - **Subtítulos palabra por palabra**: con ElevenLabs van exactos con la voz.
   - **Música de fondo (opcional)**: pon un archivo `musica.mp3` (o `.m4a`) en `workspace/contenido/<cuenta>/` y se mezcla bajito debajo de la voz. Usa música que puedas usar (por ejemplo, de la biblioteca de audio de YouTube). Si no hay archivo, puedes ponerle una canción de moda al subirlo desde la app de Instagram.
   - Con `publica <cuenta>` se sube el carrusel y el video aparte.
 - **Paleta**: escoge una lista (por ejemplo, "Negro y naranja") o pon tus colores en hexadecimal. **Estilo de las imágenes** describe en palabras cómo se ven (letras, detalles). La vista previa muestra cómo quedan.

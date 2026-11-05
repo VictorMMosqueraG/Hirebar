@@ -301,6 +301,7 @@ public final class Controller {
                         self?.reply((notes + [ask]).joined(separator: " "))
                         return
                     }
+                    if let problem { notes.append("Ojo: el video \(problem).") }
                     Notifier.sendVideo(video, caption: "\(account.title): video corto (Reel)") {
                         self?.reply((notes + [ask + " El video se sube junto con las imágenes."]).joined(separator: " "))
                     }
