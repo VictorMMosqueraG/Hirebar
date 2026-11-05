@@ -6,6 +6,7 @@ public enum Engine {
         Paths.ensure()
         Paths.installTemplates(from: resources)
         AgentStore.writeMissingDefaults()
+        Migrations.run()
         Controller.shared.start()
         FreelanceRadar.shared.start()
         JobRadar.shared.start()

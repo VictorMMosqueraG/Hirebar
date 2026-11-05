@@ -54,6 +54,7 @@ public enum Paths {
                                        "9dcc00aa0e7d6aa9e2fe0fb952dc45291f32fcf4bcb918d45f1c80df702e1430"],
         "instrucciones-contenido-publicar.md": ["c84254fb1ade7117e9289e504c73a1851d07b9912eaf9c6aca9eb170c6b8ae5d",
                                                 "d83f1e8d47fbe59cb06c9e46ffd55282531b6d37b91fbd824159b2a381d63de5"],
+        "instrucciones-seguimiento.md": ["7da33ef4ef15fed7ee3013544cf47503c4844f95f98be857cfded350931e4b4a"],
     ]
 
     static func sha256(_ data: Data) -> String {

@@ -174,7 +174,7 @@ public struct AgentSettings: Codable, Sendable {
             return AgentSettings(id: .freelance, name: "Freelance",
                                  purpose: "Busca proyectos en portales freelance, envía propuestas y hace seguimientos.",
                                  enabled: config.freelanceOn, autoApprove: config.autoFreelance,
-                                 searchEveryMinutes: config.freelanceMinutes, dailyLimit: 5,
+                                 searchEveryMinutes: config.freelanceMinutes, dailyLimit: 12,
                                  tasks: [AgentTask(mode: .followUp, hours: [10, 16], windowHours: 3),
                                          AgentTask(mode: .portalScanFreelance, hours: [9, 13, 17])])
         case .clients:

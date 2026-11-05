@@ -110,6 +110,7 @@ final class PanelModel: ObservableObject {
         var stats = WeeklyStats.lines(for: kind)
         if kind == .freelance {
             stats += ["Workana \(Quotas.describe("workana"))", "Freelancer \(Quotas.describe("freelancer"))"]
+            if config.isEnabled("fiverr") { stats.append("Fiverr: se revisa en los seguimientos") }
         }
         if !stats.isEmpty && [.jobs, .freelance, .clients].contains(kind) { stats[0] = "Esta semana: " + stats[0] }
         let ids = kind == .jobs ? Config.jobSources : kind == .freelance ? Config.freelanceSources : []

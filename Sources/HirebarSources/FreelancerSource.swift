@@ -34,6 +34,7 @@ public struct FreelancerSource: ListingSource {
         let now = Date().timeIntervalSince1970
         var outcome = SourceResult()
         var recent = 0, matching = 0
+        var discarded: [(reason: String, title: String)] = []
         for (projectId, project) in projects {
             guard !skip.contains("f:\(projectId)") else { continue }
             let submitted = (project["time_submitted"] as? NSNumber)?.doubleValue ?? 0
@@ -41,14 +42,24 @@ public struct FreelancerSource: ListingSource {
             guard age >= 0, age <= Self.maxAgeMinutes else { continue }
             recent += 1
             let upgrades = project["upgrades"] as? [String: Any] ?? [:]
-            if (upgrades["pf_only"] as? Bool) == true || (project["nonpublic"] as? Bool) == true { continue }
-            if let state = project["status"] as? String, state != "active" { continue }
-            guard (project["language"] as? String ?? "en") == "es" else { continue }
             let title = project["title"] as? String ?? ""
+            if (upgrades["pf_only"] as? Bool) == true || (project["nonpublic"] as? Bool) == true {
+                discarded.append(("solo Preferred o privado", title))
+                continue
+            }
+            if let state = project["status"] as? String, state != "active" { continue }
+            guard (project["language"] as? String ?? "en") == "es" else {
+                discarded.append(("en inglés", title))
+                continue
+            }
             let description = project["description"] as? String ?? (project["preview_description"] as? String ?? "")
             let jobs = ((project["jobs"] as? [[String: Any]]) ?? []).compactMap { $0["name"] as? String }
-            guard let fit = FreelanceClassifier.classify(head: "\(title) \(jobs.joined(separator: " "))", body: description,
-                                                         title: title, profile: profile.freelance) else { continue }
+            let verdict = FreelanceClassifier.verdict(head: "\(title) \(jobs.joined(separator: " "))", body: description,
+                                                      title: title, profile: profile.freelance)
+            guard let fit = verdict.fit else {
+                discarded.append((verdict.reason, title))
+                continue
+            }
             matching += 1
             let stats = project["bid_stats"] as? [String: Any] ?? [:]
             let bids = (stats["bid_count"] as? NSNumber)?.intValue ?? 0
@@ -58,8 +69,14 @@ public struct FreelancerSource: ListingSource {
             let maxUSD = ((budget["maximum"] as? NSNumber)?.doubleValue ?? 0) * rate
             let hourly = (project["type"] as? String) == "hourly"
             let top = max(minUSD, maxUSD)
-            if hourly && top < profile.freelance.minHourlyUSD { continue }
-            if !hourly && top < profile.freelance.minFixedUSD { continue }
+            if hourly && top < profile.freelance.minHourlyUSD {
+                discarded.append(("pago por hora muy bajo", title))
+                continue
+            }
+            if !hourly && top < profile.freelance.minFixedUSD {
+                discarded.append(("presupuesto muy bajo", title))
+                continue
+            }
             var verified = false
             if let owner = (project["owner_id"] as? NSNumber)?.intValue,
                let user = users["\(owner)"] as? [String: Any],
@@ -83,6 +100,7 @@ public struct FreelancerSource: ListingSource {
             }
         }
         Log.write("Freelance · Freelancer: \(projects.count) proyectos leídos, \(recent) de menos de 24 h y no vistos, \(matching) de tu perfil, \(outcome.hits.count) avisables + \(outcome.backup.count) de respaldo")
+        if !discarded.isEmpty { Log.write("Freelance · Freelancer descartados: " + FreelanceClassifier.summary(discarded)) }
         return outcome
     }
 }

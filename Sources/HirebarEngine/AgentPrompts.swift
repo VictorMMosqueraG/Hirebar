@@ -12,9 +12,12 @@ enum AgentPrompts {
         let limit = AgentStore.load(AgentKind.owner(of: batch.mode)).dailyLimit.map { " Cupo diario de este agente: \($0)." } ?? ""
         switch batch.mode {
         case .followUp:
+            let fiverr = Config.load().isEnabled("fiverr")
+                ? " Revisa también Fiverr (punto 5 de tus instrucciones)."
+                : " Fiverr está apagado en Hirebar: salta el punto 5."
             return """
             Revisión de seguimientos \(batch.id) (\(now), semana \(week)). Revisa seguimiento.json y haz los seguimientos \
-            que tocan según tus instrucciones, sin pedir confirmación. \(browser)
+            que tocan según tus instrucciones, sin pedir confirmación. \(browser)\(fiverr)
             """
         case .weeklyReport:
             return """
@@ -98,6 +101,19 @@ enum AgentPrompts {
             Lote \(batch.id) (\(now)). \(owner) respondió SÍ desde Telegram: analiza la competencia, redacta y ENVÍA YA \
             la propuesta de cada uno de estos proyectos, sin pedirle más confirmación, siguiendo tus instrucciones \
             (perfil.md y las reglas de propuestas). \(browser)\(limit)
+
+            Reglas vigentes desde el 5 nov 2026 (mandan sobre tus instrucciones si se contradicen; la persona quiere \
+            MÁS propuestas enviadas):
+            - Cliente sin pago verificado: NO es motivo para descartar si el proyecto tiene menos de 10 propuestas \
+            y la descripción es clara. Descártalo solo si además tiene 10 o más propuestas o señales de estafa.
+            - Páginas web y landings: SÍ se envían si se pueden hacer con Angular, HTML y CSS (más un backend si \
+            hace falta). No si piden WordPress, Shopify, Wix, React/Next.js o PHP como requisito.
+            - "De Excel a un sistema", paneles internos y automatizaciones: SÍ, son backend + integraciones.
+            - Proyectos con IA: SÍ si el núcleo es backend (API, integración, base de datos, despliegue) y la IA es \
+            una pieza (por ejemplo, llamar a la API de OpenAI). No si el trabajo es entrenar modelos o un bot \
+            conversacional de WhatsApp.
+            - Ante la duda entre enviar o descartar un proyecto que la persona podría hacer, ENVÍA: una propuesta \
+            concreta con una fase 1 pequeña vale más que un descarte.
 
             \(list)
             """

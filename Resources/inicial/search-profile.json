@@ -1,11 +1,11 @@
 {
-  "freelance" : {
-    "frontendOnly" : [
+  "freelance": {
+    "frontendOnly": [
       "react",
       "next.js",
       "nextjs"
     ],
-    "hardBlocked" : [
+    "hardBlocked": [
       "wordpress",
       "woocommerce",
       "shopify",
@@ -31,19 +31,15 @@
       "seo",
       "edicion de video"
     ],
-    "minFixedUSD" : 50,
-    "minHourlyUSD" : 12,
-    "offProfile" : [
+    "minFixedUSD": 50,
+    "minHourlyUSD": 12,
+    "offProfile": [
       "data entry",
       "entrada de datos",
-      "research",
-      "investigacion",
       "gohighlevel",
       "ghl",
       "zoho",
       "hubspot",
-      "catalog",
-      "catalogo",
       "virtual assistant",
       "asistente virtual",
       "copywriting",
@@ -57,7 +53,6 @@
       "legal",
       "contabilidad",
       "accounting",
-      "excel",
       "google sheets",
       "tiktok",
       "instagram",
@@ -67,11 +62,11 @@
       "embudo",
       "funnel"
     ],
-    "stackBlocked" : [
+    "stackBlocked": [
       "php",
       "laravel"
     ],
-    "stretch" : [
+    "stretch": [
       "python",
       "fastapi",
       "django",
@@ -117,9 +112,16 @@
       "automation",
       "power bi",
       "sap",
-      "odoo"
+      "odoo",
+      "pagina web",
+      "sitio web",
+      "landing",
+      "landing page",
+      "html",
+      "css",
+      "excel"
     ],
-    "strong" : [
+    "strong": [
       "api",
       "apis",
       "rest",
@@ -184,7 +186,7 @@
       "servidor",
       "escalabilidad"
     ],
-    "titleBlocked" : [
+    "titleBlocked": [
       "android",
       "ios",
       "swift",
@@ -202,7 +204,7 @@
       "certification",
       "celular colombiano"
     ],
-    "titleNever" : [
+    "titleNever": [
       "bot",
       "bots",
       "chatbot",
@@ -211,28 +213,13 @@
       "respuestas automaticas",
       "respuesta automatica",
       "automatizacion de respuestas",
-      "inteligencia artificial",
-      "ia",
-      "gpt",
-      "chatgpt",
-      "openai",
-      "llm",
-      "agente de ia",
-      "agentes de ia",
-      "agente ia",
       "n8n",
-      "firebase",
-      "landing",
-      "landing page",
-      "pagina web",
-      "sitio web",
-      "diseno web",
       "odoo",
       "power bi",
       "tableau",
       "psicotecnicos"
     ],
-    "whatsappBotWords" : [
+    "whatsappBotWords": [
       "respuestas",
       "automatiz",
       "asistente",
@@ -240,7 +227,7 @@
       "inteligente",
       "mensajes"
     ],
-    "workanaQueries" : [
+    "workanaQueries": [
       "category=it-programming",
       "category=it-programming&page=2",
       "query=api",
@@ -261,8 +248,8 @@
       "query=migracion"
     ]
   },
-  "jobs" : {
-    "blocked" : [
+  "jobs": {
+    "blocked": [
       "php",
       "laravel",
       "wordpress",
@@ -310,19 +297,19 @@
       "desenvolvedor",
       "pleno"
     ],
-    "blockedCompanies" : [
+    "blockedCompanies": [
       "canonical",
       "mercado libre",
       "mercadolibre"
     ],
-    "blockedTitleWords" : [
+    "blockedTitleWords": [
       "arquitecto",
       "arquitecta",
       "architect",
       "staff",
       "principal"
     ],
-    "computrabajoSlugs" : [
+    "computrabajoSlugs": [
       "backend",
       "desarrollador-backend",
       "desarrollador-node",
@@ -338,8 +325,8 @@
       "desarrollador-angular",
       "desarrollador-typescript"
     ],
-    "country" : "colombia",
-    "elempleoQueries" : [
+    "country": "colombia",
+    "elempleoQueries": [
       "backend",
       "nodejs",
       ".net",
@@ -351,7 +338,7 @@
       "microservicios",
       "desarrollador senior"
     ],
-    "frontendOnly" : [
+    "frontendOnly": [
       "react",
       "react.js",
       "reactjs",
@@ -362,7 +349,7 @@
       "front-end",
       "vue"
     ],
-    "generic" : [
+    "generic": [
       "backend",
       "back end",
       "back-end",
@@ -387,7 +374,7 @@
       "fastapi",
       "flask"
     ],
-    "getOnBoardQueries" : [
+    "getOnBoardQueries": [
       "backend",
       "node",
       "nestjs",
@@ -400,9 +387,9 @@
       "microservicios",
       "typescript"
     ],
-    "hasProfessionalCard" : false,
-    "homeCity" : "cali",
-    "linkedInContractQueries" : [
+    "hasProfessionalCard": false,
+    "homeCity": "cali",
+    "linkedInContractQueries": [
       "backend",
       "node.js",
       "nestjs",
@@ -413,7 +400,7 @@
       "freelance desarrollador",
       "desarrollador por proyecto"
     ],
-    "linkedInQueries" : [
+    "linkedInQueries": [
       "nestjs",
       "desarrollador node.js",
       "desarrollador .net",
@@ -434,7 +421,7 @@
       "desarrollador full stack react node",
       "desarrollador backend python"
     ],
-    "linkedInRegionalQueries" : [
+    "linkedInRegionalQueries": [
       "desarrollador backend",
       "desarrollador node.js",
       "nestjs",
@@ -443,17 +430,17 @@
       "lider tecnico",
       "desarrollador full stack"
     ],
-    "magnetoRoles" : [
+    "magnetoRoles": [
       "desarrollador-software",
       "ingeniero-software",
       "desarrollador-full-stack",
       "ingeniero-desarrollo-software",
       "desarrollador-web"
     ],
-    "maxYearsRequired" : 5,
-    "minSalaryCOP" : 5000000,
-    "minSalaryUSD" : 1200,
-    "otherStack" : [
+    "maxYearsRequired": 5,
+    "minSalaryCOP": 5000000,
+    "minSalaryUSD": 1200,
+    "otherStack": [
       "webflux",
       "go",
       "golang",
@@ -462,7 +449,7 @@
       "scala",
       "kotlin"
     ],
-    "ownStack" : [
+    "ownStack": [
       "node",
       "nodejs",
       "node.js",
@@ -482,7 +469,7 @@
       "maven",
       "gradle"
     ],
-    "strong" : [
+    "strong": [
       "node",
       "nodejs",
       "node.js",
@@ -505,7 +492,7 @@
       "maven",
       "gradle"
     ],
-    "weak" : [
+    "weak": [
       "webflux",
       "go",
       "golang",

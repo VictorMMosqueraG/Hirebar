@@ -17,7 +17,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     private var ticker: Timer?
 
     static let sourceTitles = [
-        "workana": "Workana", "freelancer": "Freelancer",
+        "workana": "Workana", "freelancer": "Freelancer", "fiverr": "Fiverr",
         "linkedin": "LinkedIn", "getonboard": "Get on Board", "computrabajo": "Computrabajo",
         "elempleo": "elempleo", "magneto": "Magneto",
     ]
@@ -86,6 +86,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
             menu.addItem(.separator())
             menu.addItem(label { "Workana: \(Quotas.describe("workana"))" })
             menu.addItem(label { "Freelancer: \(Quotas.describe("freelancer"))" })
+            menu.addItem(label { Config.load().isEnabled("fiverr") ? "Fiverr: mensajes y pedidos en los seguimientos" : "Fiverr: apagado" })
         }
         let tasks = AgentStore.load(kind).tasks
         if !tasks.isEmpty {

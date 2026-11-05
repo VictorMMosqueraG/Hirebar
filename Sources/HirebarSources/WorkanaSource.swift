@@ -5,7 +5,7 @@ public struct WorkanaSource: ListingSource {
     public let id = "workana"
     public let name = "Workana"
     static let base = "https://www.workana.com"
-    static let maxAgeMinutes = 720
+    static let maxAgeMinutes = 1440
 
     public init() {}
 
@@ -24,14 +24,19 @@ public struct WorkanaSource: ListingSource {
             await Net.pause(0.8)
         }
         var outcome = SourceResult()
+        var discarded: [(reason: String, title: String)] = []
         for (slug, result) in candidates {
             guard let age = TextTools.ageMinutes(result["postedDate"] as? String ?? ""), age <= Self.maxAgeMinutes else { continue }
             recent += 1
             let title = TextTools.clean(result["title"] as? String ?? slug)
             let description = TextTools.clean(result["description"] as? String ?? "")
             let skills = ((result["skills"] as? [[String: Any]]) ?? []).compactMap { $0["anchorText"] as? String }
-            guard let fit = FreelanceClassifier.classify(head: "\(title) \(skills.joined(separator: " "))", body: description,
-                                                         title: title, profile: profile.freelance) else { continue }
+            let verdict = FreelanceClassifier.verdict(head: "\(title) \(skills.joined(separator: " "))", body: description,
+                                                      title: title, profile: profile.freelance)
+            guard let fit = verdict.fit else {
+                discarded.append((verdict.reason, title))
+                continue
+            }
             matching += 1
             let budgetText = TextTools.normalize(result["budget"] as? String ?? "")
             if budgetText.contains(" menos de usd 15 ") || budgetText.contains(" menos de usd 50 ") { continue }
@@ -54,7 +59,8 @@ public struct WorkanaSource: ListingSource {
             }
             await Net.pause(0.5)
         }
-        Log.write("Freelance · Workana: \(pages)/\(queries.count) páginas leídas, \(candidates.count) proyectos no vistos, \(recent) de menos de 12 h, \(matching) de tu perfil, \(outcome.hits.count) avisables + \(outcome.backup.count) de respaldo")
+        Log.write("Freelance · Workana: \(pages)/\(queries.count) páginas leídas, \(candidates.count) proyectos no vistos, \(recent) de menos de 24 h, \(matching) de tu perfil, \(outcome.hits.count) avisables + \(outcome.backup.count) de respaldo")
+        if !discarded.isEmpty { Log.write("Freelance · Workana descartados: " + FreelanceClassifier.summary(discarded)) }
         return outcome
     }
 

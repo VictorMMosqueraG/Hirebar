@@ -1,7 +1,7 @@
 import Foundation
 
 public struct Config: Codable, Sendable {
-    public static let freelanceSources = ["workana", "freelancer"]
+    public static let freelanceSources = ["workana", "freelancer", "fiverr"]
     public static let jobSources = ["linkedin", "getonboard", "computrabajo", "elempleo", "magneto"]
 
     public var ownerName = "el usuario"

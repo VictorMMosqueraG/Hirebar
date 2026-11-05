@@ -4,7 +4,7 @@ import HirebarSources
 
 public final class FreelanceRadar: Radar {
     public static let shared = FreelanceRadar()
-    static let maxPerBatch = 5
+    static let maxPerBatch = 8
 
     private init() {
         super.init(firstDelay: 60, seenKey: "radar.seen", seenDays: 14)
