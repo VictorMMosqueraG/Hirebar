@@ -162,7 +162,8 @@ public final class Controller {
                                            prompt: AgentPrompts.prompt(for: batch, items: items, owner: owner),
                                            playbook: Paths.playbook(for: batch.mode),
                                            output: outURL, errors: errURL,
-                                           browser: batch.mode != .linkedInDraft)
+                                           browser: batch.mode != .linkedInDraft
+                                               || (ContentAccountStore.find(batch.account)?.needsPerformanceCheck ?? false))
         guard case .success(let process) = launch else {
             if case .failure(let problem) = launch {
                 reply(problem.message)
@@ -291,23 +292,43 @@ public final class Controller {
                 notes.append("\(failed) lámina(s) no se pudieron convertir.")
             }
             Notifier.sendPhotos(made, caption: "\(account.title): imágenes de la publicación (\(made.count))") {
+                if let text = Self.copyText(account.draft) {
+                    self?.reply("Texto de la publicación de \(account.title), listo para copiar:\n\n\(text)")
+                }
                 guard account.video else {
                     self?.reply((notes + [ask]).joined(separator: " "))
                     return
                 }
-                ReelRenderer.render(account) { video, problem in
+                ReelRenderer.renderPreview(account) { video, problem in
+                    let rest = {
+                        if let script = ReelRenderer.readingScript(account) {
+                            UserDefaults.standard.set(account.id, forKey: Self.waitingVoiceKey)
+                            self?.reply(script)
+                        }
+                        if let text = Self.copyText(account.videoFolder.appendingPathComponent("texto.md")) {
+                            self?.reply("Descripción del video de \(account.title), lista para copiar:\n\n\(text)")
+                        }
+                        self?.reply((notes + [ask + " El video se sube cuando me mandes tu voz."]).joined(separator: " "))
+                    }
                     guard let video else {
-                        notes.append("No salió el video: \(problem ?? "sin detalle").")
-                        self?.reply((notes + [ask]).joined(separator: " "))
+                        notes.append("No salió la vista previa del video: \(problem ?? "sin detalle").")
+                        rest()
                         return
                     }
-                    if let problem { notes.append("Ojo: el video \(problem).") }
-                    Notifier.sendVideo(video, caption: "\(account.title): video corto (Reel)") {
-                        self?.reply((notes + [ask + " El video se sube junto con las imágenes."]).joined(separator: " "))
-                    }
+                    Notifier.sendVideo(video, caption: "\(account.title): vista previa del video, sin voz") { rest() }
                 }
             }
         }
+    }
+
+    /// Cuenta cuyo video está esperando la nota de voz de la persona.
+    static let waitingVoiceKey = "video.esperandoVoz"
+
+    /// Texto de un archivo para mandarlo a Telegram tal cual, listo para copiar y pegar.
+    static func copyText(_ file: URL) -> String? {
+        guard let text = try? String(contentsOf: file, encoding: .utf8) else { return nil }
+        let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return clean.count > 10 ? String(clean.prefix(3800)) : nil
     }
 
     static let portalSeenKey = "portals.seen"

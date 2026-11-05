@@ -5,19 +5,20 @@ import Foundation
 import HirebarCore
 import ImageIO
 
-/// Arma el Short/Reel de una cuenta (1080×1920) en el Mac:
-/// - pone voz a la narración de cada escena (ElevenLabs o la voz del Mac); la escena dura lo que dura su voz,
-/// - graba cada escena HTML ANIMADA cuadro por cuadro (30 por segundo) con el motor web de macOS,
-///   y si una escena no se puede animar usa una imagen fija de Chrome con un acercamiento suave,
-/// - dibuja subtítulos grandes palabra por palabra (la palabra que suena va en el color de acento),
-/// - mezcla la voz y, si existe, la música de fondo de la cuenta (musica.mp3) a volumen bajo.
+/// Arma el Short/Reel de una cuenta (1080×1920) en el Mac, en dos tiempos:
+/// 1. Vista previa sin voz: graba cada escena HTML ANIMADA cuadro por cuadro (30 por segundo) con el motor web de
+///    macOS, con la duración estimada de cada frase del guion. Va a Telegram junto con el guion para leerlo.
+/// 2. Video final: con la nota de voz que la persona manda por Telegram. Escucha la voz para saber en qué segundo se
+///    dice cada palabra, cuadra cada escena y cada subtítulo con la voz y mezcla la voz (y la música, si hay).
 public enum ReelRenderer {
     static let width = 1080
     static let height = 1920
     static let fps: Int32 = 30
     static let captionCenterFromTop = 1300.0
     static let wordsPerCaption = 3
-    static let musicVolume: Float = 0.12
+    static let musicVolume: Float = 0.10
+    /// Palabras por segundo al leer en voz alta con energía (para la vista previa).
+    static let wordsPerSecond = 2.7
 
     struct Scene: Decodable {
         let archivo: String
@@ -27,20 +28,13 @@ public enum ReelRenderer {
 
     struct Script: Decodable {
         let escenas: [Scene]
+        let tono: String?
     }
 
     struct Clip {
         let page: URL
         let seconds: Double
         let words: [WordTiming]
-        let audio: URL?
-    }
-
-    /// El video salió, pero con algo menos (por ejemplo, sin voz).
-    struct PartialProblem: LocalizedError {
-        let video: URL
-        let message: String
-        var errorDescription: String? { message }
     }
 
     struct Problem: LocalizedError {
@@ -48,138 +42,112 @@ public enum ReelRenderer {
         var errorDescription: String? { message }
     }
 
+    /// Video final, narrado con la voz de la persona.
     public static func output(_ account: ContentAccount) -> URL {
         account.videoFolder.appendingPathComponent("reel.mp4")
     }
 
-    public static func render(_ account: ContentAccount, completion: @escaping (_ video: URL?, _ problem: String?) -> Void) {
+    /// Vista previa sin voz.
+    public static func preview(_ account: ContentAccount) -> URL {
+        account.videoFolder.appendingPathComponent("vista-previa.mp4")
+    }
+
+    static func loadScript(_ account: ContentAccount) throws -> (scenes: [Scene], tone: String?) {
+        let folder = account.videoFolder
+        guard let data = try? Data(contentsOf: folder.appendingPathComponent("guion.json")),
+              let script = try? JSONDecoder().decode(Script.self, from: data) else {
+            throw Problem(message: "\(AI.name) no dejó el guion del video (video/guion.json)")
+        }
+        let scenes = script.escenas.filter { FileManager.default.fileExists(atPath: folder.appendingPathComponent($0.archivo).path) }
+        guard !scenes.isEmpty else { throw Problem(message: "no encontré las escenas del video") }
+        return (scenes, script.tono)
+    }
+
+    /// Guion para leer en voz alta, escena por escena, listo para mandar a Telegram.
+    public static func readingScript(_ account: ContentAccount) -> String? {
+        guard let script = try? loadScript(account) else { return nil }
+        let texts = script.scenes.compactMap { $0.texto?.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        guard !texts.isEmpty else { return nil }
+        let words = texts.map { $0.split(whereSeparator: \.isWhitespace).count }.reduce(0, +)
+        let seconds = Int((Double(words) / wordsPerSecond).rounded())
+        var lines = ["Guion para grabar (\(account.title)), unos \(seconds) segundos:", ""]
+        if let tone = script.tone, !tone.isEmpty { lines += ["Tono: \(tone)", ""] }
+        for (index, text) in texts.enumerated() { lines.append("\(index + 1). \(text)") }
+        lines += ["", "Léelo de corrido, sin decir los números, con energía y sonriendo (se nota en la voz). Si te equivocas, sigue: Hirebar acomoda las escenas a tu ritmo.",
+                  "Responde a este chat con una nota de voz y te devuelvo el video con tu voz, listo para subir."]
+        return lines.joined(separator: "\n")
+    }
+
+    /// Arma la vista previa sin voz (duración estimada de cada frase).
+    public static func renderPreview(_ account: ContentAccount, completion: @escaping (_ video: URL?, _ problem: String?) -> Void) {
         DispatchQueue.global(qos: .utility).async {
             let result: (URL?, String?)
             do {
-                result = (try make(account), nil)
-            } catch let partial as PartialProblem {
-                result = (partial.video, partial.message)
+                let script = try loadScript(account)
+                let clips = script.scenes.map { scene -> Clip in
+                    let text = scene.texto ?? ""
+                    let words = Double(max(1, text.split(whereSeparator: \.isWhitespace).count))
+                    let seconds = min(12, max(1.5, scene.segundos ?? (words / wordsPerSecond + 0.3)))
+                    return Clip(page: account.videoFolder.appendingPathComponent(scene.archivo), seconds: seconds, words: [])
+                }
+                result = (try finish(account, clips: clips, voice: nil, to: preview(account)), nil)
             } catch {
                 result = (nil, error.localizedDescription)
             }
-            if result.0 == nil, let problem = result.1 { Log.write("Contenido (\(account.id)): no salió el video: \(problem)") }
+            if let problem = result.1 { Log.write("Contenido (\(account.id)): no salió la vista previa: \(problem)") }
             DispatchQueue.main.async { completion(result.0, result.1) }
         }
     }
 
-    /// Si hay clave de ElevenLabs y la cuenta no tiene una voz escogida, escoge sola la mejor voz para Shorts
-    /// y la deja guardada en la cuenta.
-    static func ensureVoice(_ account: ContentAccount) -> ContentAccount {
-        // Sin nada que configurar: si la cuenta seguía con la voz del Mac por defecto, o escogió Azure o ElevenLabs
-        // pero no hay clave, pasa a la voz neuronal de Microsoft (sin cuenta).
-        let noKey = (account.voiceEngine == .azure && Narrator.azureKey == nil)
-            || (account.voiceEngine == .elevenlabs && Narrator.elevenLabsKey == nil)
-        if noKey || (account.voiceEngine == .macos && account.voice.isEmpty) {
-            var updated = account
-            updated.voiceEngine = .edge
-            updated.voice = ""
-            var all = ContentAccountStore.load()
-            if let index = all.firstIndex(where: { $0.id == account.id }) {
-                all[index].voiceEngine = .edge
-                all[index].voice = ""
-                try? ContentAccountStore.save(all)
+    /// Arma el video final con la nota de voz de la persona.
+    public static func renderWithVoice(_ account: ContentAccount, recording: URL,
+                                       completion: @escaping (_ video: URL?, _ problem: String?) -> Void) {
+        DispatchQueue.global(qos: .utility).async {
+            let result: (URL?, String?)
+            do {
+                let script = try loadScript(account)
+                let voice = account.videoFolder.appendingPathComponent("mi-voz.m4a")
+                try AudioTools.prepareVoice(recording, to: voice)
+                guard let duration = VoiceListener.duration(voice) else { throw Problem(message: "el audio llegó vacío") }
+                let heard = VoiceListener.words(in: voice)
+                let texts = script.scenes.map { $0.texto ?? "" }
+                let timings = ScriptAligner.align(texts, heard: heard, pauses: AudioTools.pauses(in: voice), duration: duration)
+                Log.write("Contenido (\(account.id)): cortes de escena en "
+                          + timings.map { String(format: "%.1f", $0.start) }.joined(separator: ", ") + " s")
+                let clips = zip(script.scenes, timings).map { scene, timing in
+                    Clip(page: account.videoFolder.appendingPathComponent(scene.archivo), seconds: timing.end - timing.start,
+                         words: account.captions ? timing.words : [])
+                }
+                Log.write("Contenido (\(account.id)): tu voz dura \(Int(duration)) s")
+                result = (try finish(account, clips: clips, voice: voice, to: output(account)), nil)
+            } catch {
+                result = (nil, error.localizedDescription)
             }
-            return updated
+            if let problem = result.1 { Log.write("Contenido (\(account.id)): no salió el video con tu voz: \(problem)") }
+            DispatchQueue.main.async { completion(result.0, result.1) }
         }
-        guard account.voice.isEmpty, account.voiceEngine == .azure || account.voiceEngine == .elevenlabs else { return account }
-        let engine: VoiceEngine
-        let voice: String
-        if Narrator.azureKey != nil, account.voiceEngine != .elevenlabs {
-            engine = .azure
-            voice = VoiceEngine.azureDefaultVoice
-        } else if let key = Narrator.elevenLabsKey, account.voiceEngine != .azure,
-                  let chosen = Narrator.chooseShortsVoice(key: key) {
-            engine = .elevenlabs
-            voice = chosen.id
-        } else {
-            return account
-        }
-        var updated = account
-        updated.voiceEngine = engine
-        updated.voice = voice
-        var all = ContentAccountStore.load()
-        if let index = all.firstIndex(where: { $0.id == account.id }) {
-            all[index].voiceEngine = engine
-            all[index].voice = voice
-            try? ContentAccountStore.save(all)
-        }
-        return updated
     }
 
-    static func make(_ original: ContentAccount) throws -> URL {
-        let account = ensureVoice(original)
+    /// Graba las escenas y les pone la voz (si hay) y la música (si hay).
+    static func finish(_ account: ContentAccount, clips: [Clip], voice: URL?, to target: URL) throws -> URL {
         let folder = account.videoFolder
-        guard let data = try? Data(contentsOf: folder.appendingPathComponent("guion.json")),
-              let script = try? JSONDecoder().decode(Script.self, from: data), !script.escenas.isEmpty else {
-            throw Problem(message: "\(AI.name) no dejó el guion del video (video/guion.json)")
-        }
-        var clips: [Clip] = []
-        var voiceProblem: String?
-        var previous: String?
-        for (index, scene) in script.escenas.enumerated() {
-            let page = folder.appendingPathComponent(scene.archivo)
-            guard FileManager.default.fileExists(atPath: page.path) else { continue }
-            let text = (scene.texto ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            var narration: Narration?
-            if !text.isEmpty && voiceProblem == nil {
-                do {
-                    narration = try Narrator.speak(text, previous: previous, account: account,
-                                                   to: folder.appendingPathComponent("voz-\(index + 1)"))
-                } catch {
-                    voiceProblem = error.localizedDescription
-                }
-            }
-            previous = text
-            let spoken = narration?.duration ?? scene.segundos ?? max(1.5, Double(text.split(separator: " ").count) / 2.6)
-            let seconds = min(12, max(1.2, spoken + 0.3))
-            let words = account.captions ? timings(text, narration: narration, spoken: spoken) : []
-            clips.append(Clip(page: page, seconds: seconds, words: words, audio: narration?.file))
-        }
-        guard !clips.isEmpty else { throw Problem(message: "no encontré las escenas del video") }
-        if let voiceProblem { Log.write("Contenido (\(account.id)): el video sale sin voz: \(voiceProblem)") }
-        Log.write("Contenido (\(account.id)): voz lista, grabando \(clips.count) escenas")
-
-        let silent = folder.appendingPathComponent("reel-sin-sonido.mp4")
-        let target = output(account)
+        let silent = folder.appendingPathComponent("grabando.mp4")
         try? FileManager.default.removeItem(at: silent)
         try? FileManager.default.removeItem(at: target)
+        Log.write("Contenido (\(account.id)): grabando \(clips.count) escenas" + (voice == nil ? " (vista previa sin voz)" : " con tu voz"))
         let animated = try writeVideo(clips, accent: color(account.palette.accent), to: silent)
         let music = account.music
-        if clips.contains(where: { $0.audio != nil }) || music != nil {
-            try mix(video: silent, clips: clips, music: music, to: target)
+        if voice != nil || music != nil {
+            try mix(video: silent, voice: voice, music: music, to: target)
             try? FileManager.default.removeItem(at: silent)
         } else {
             try FileManager.default.moveItem(at: silent, to: target)
         }
         let total = clips.reduce(0) { $0 + $1.seconds }
         Log.write("Contenido (\(account.id)): video de \(clips.count) escenas (\(animated) animadas) y \(Int(total)) s listo"
-                  + (voiceProblem == nil ? " con voz (\(account.voiceEngine.rawValue))" : " sin voz")
-                  + (music == nil ? "" : " y música"))
-        if let voiceProblem { throw PartialProblem(video: target, message: "salió sin voz: \(voiceProblem)") }
+                  + (voice == nil ? " sin voz" : " con tu voz") + (music == nil ? "" : " y música"))
         return target
     }
-
-    /// Tiempos de cada palabra: los exactos de la voz si los hay; si no, repartidos por el largo de cada palabra.
-    static func timings(_ text: String, narration: Narration?, spoken: Double) -> [WordTiming] {
-        if let exact = narration?.words, !exact.isEmpty { return exact }
-        let words = text.split(whereSeparator: \.isWhitespace).map(String.init)
-        let weights = words.map { Double($0.count) + 1.5 }
-        let total = weights.reduce(0, +)
-        guard total > 0 else { return [] }
-        var cursor = 0.0
-        return zip(words, weights).map { word, weight in
-            let length = spoken * weight / total
-            defer { cursor += length }
-            return WordTiming(word: word, start: cursor, end: cursor + length)
-        }
-    }
-
-    // MARK: - Imagen
 
     /// Escribe el video sin sonido. Devuelve cuántas escenas salieron animadas.
     static func writeVideo(_ clips: [Clip], accent: NSColor, to url: URL) throws -> Int {
@@ -342,28 +310,21 @@ public enum ReelRenderer {
 
     // MARK: - Sonido
 
-    static func mix(video: URL, clips: [Clip], music: URL?, to target: URL) throws {
+    static func mix(video: URL, voice: URL?, music: URL?, to target: URL) throws {
         let composition = AVMutableComposition()
         let videoAsset = AVURLAsset(url: video)
         guard let source = videoAsset.tracks(withMediaType: .video).first,
               let videoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
-            throw Problem(message: "no se pudo leer el video para ponerle la voz")
+            throw Problem(message: "no se pudo leer el video para ponerle el sonido")
         }
         let total = videoAsset.duration
         try videoTrack.insertTimeRange(CMTimeRange(start: .zero, duration: total), of: source, at: .zero)
 
-        if let voiceTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) {
-            var cursor = 0.0
-            for clip in clips {
-                if let audio = clip.audio {
-                    let asset = AVURLAsset(url: audio)
-                    if let track = asset.tracks(withMediaType: .audio).first {
-                        let length = CMTimeMinimum(asset.duration, CMTime(seconds: clip.seconds, preferredTimescale: 600))
-                        try? voiceTrack.insertTimeRange(CMTimeRange(start: .zero, duration: length), of: track,
-                                                        at: CMTime(seconds: cursor, preferredTimescale: 600))
-                    }
-                }
-                cursor += clip.seconds
+        if let voice, let voiceTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) {
+            let asset = AVURLAsset(url: voice)
+            if let track = asset.tracks(withMediaType: .audio).first {
+                let length = CMTimeMinimum(asset.duration, total)
+                try? voiceTrack.insertTimeRange(CMTimeRange(start: .zero, duration: length), of: track, at: .zero)
             }
         }
 
@@ -378,7 +339,7 @@ public enum ReelRenderer {
                     at = CMTimeAdd(at, length)
                 }
                 let volume = AVMutableAudioMixInputParameters(track: musicTrack)
-                volume.setVolume(musicVolume, at: .zero)
+                volume.setVolume(voice == nil ? 0.6 : musicVolume, at: .zero)
                 parameters.append(volume)
             }
         }
@@ -397,7 +358,7 @@ public enum ReelRenderer {
         export.exportAsynchronously { done.signal() }
         done.wait()
         guard export.status == .completed else {
-            throw export.error ?? Problem(message: "no se pudo exportar el video con voz")
+            throw export.error ?? Problem(message: "no se pudo exportar el video")
         }
     }
 }

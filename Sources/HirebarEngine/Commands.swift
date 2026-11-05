@@ -16,7 +16,9 @@ extension Controller {
     post <cuenta>: solo para esa cuenta (ej: post empresa)
     publica <cuenta>: sube la publicación que te mandé (con una sola cuenta basta "publica")
     post <cuenta> cambia <qué>: la rehace con tu cambio · post <cuenta> salta: la descarta
-    video <cuenta>: vuelve a armar y mandar el video con las escenas que ya hizo la IA (sin gastar IA)
+    video <cuenta>: vuelve a mandar la vista previa sin voz y el guion para grabar
+    (nota de voz): leyendo el guion; te devuelvo el video con tu voz, listo para subir
+    rearmar <cuenta>: rehace el video con la última nota de voz que mandaste
     envia correos: envía la lista de correos del día (o "envia correos 1 3", "no correos")
     logro <texto>: agrega un logro a tu perfil y regenera tus hojas de vida
     trabajo <texto>: registra un cambio de trabajo (ej: trabajo nuevo Backend Senior en Acme desde dic 2026)
@@ -45,6 +47,10 @@ extension Controller {
         }
         guard message.chatId == config.chatId else {
             Log.write("Telegram: ignorado un mensaje de otro chat")
+            return
+        }
+        if let fileId = message.audioFileId {
+            handleRecording(fileId: fileId, ext: message.audioExtension)
             return
         }
 
@@ -104,6 +110,8 @@ extension Controller {
             handlePost(message.text)
         case "video":
             rebuildVideo(words.dropFirst().first)
+        case "rearmar", "rehacer":
+            remakeWithLastRecording(words.dropFirst().first)
         case "logro", "logros":
             requestProfileChange("Logro", rest(of: message.text), example: "logro bajé el costo de AWS 20% en KoralAT")
         case "trabajo":
@@ -287,7 +295,7 @@ extension Controller {
         }
     }
 
-    /// Arma otra vez el video de una cuenta con las escenas y el guion que ya existen.
+    /// Vuelve a mandar la vista previa sin voz y el guion para grabar.
     private func rebuildVideo(_ word: String?) {
         let withScenes = ContentAccountStore.load().filter {
             FileManager.default.fileExists(atPath: $0.videoFolder.appendingPathComponent("guion.json").path)
@@ -304,13 +312,80 @@ extension Controller {
             reply("¿De cuál cuenta? " + withScenes.map { "video \($0.id)" }.joined(separator: " · "))
             return
         }
-        reply("Armando el video de \(account.title) con las escenas que ya están; tarda unos minutos.")
-        ReelRenderer.render(account) { [weak self] video, problem in
+        reply("Armando la vista previa del video de \(account.title); tarda unos minutos.")
+        ReelRenderer.renderPreview(account) { [weak self] video, problem in
+            let sendScript = {
+                if let script = ReelRenderer.readingScript(account) {
+                    UserDefaults.standard.set(account.id, forKey: Controller.waitingVoiceKey)
+                    self?.reply(script)
+                }
+            }
             guard let video else {
-                self?.reply("No salió el video: \(problem ?? "sin detalle").")
+                self?.reply("No salió la vista previa: \(problem ?? "sin detalle").")
+                sendScript()
                 return
             }
-            Notifier.sendVideo(video, caption: "\(account.title): video corto (Reel)" + (problem.map { " · ojo: \($0)" } ?? "")) {}
+            Notifier.sendVideo(video, caption: "\(account.title): vista previa del video, sin voz") { sendScript() }
+        }
+    }
+
+    /// Rehace el video con la última nota de voz guardada de la cuenta.
+    private func remakeWithLastRecording(_ word: String?) {
+        let accounts = ContentAccountStore.load()
+        let waiting = ContentAccountStore.find(UserDefaults.standard.string(forKey: Controller.waitingVoiceKey))
+        guard let account = word.flatMap(ContentAccountStore.match) ?? waiting ?? accounts.first(where: \.video) else {
+            reply("No sé de qué cuenta. Escribe: rearmar <cuenta>")
+            return
+        }
+        let files = (try? FileManager.default.contentsOfDirectory(at: account.videoFolder, includingPropertiesForKeys: [.contentModificationDateKey])) ?? []
+        guard let recording = files.filter({ $0.lastPathComponent.hasPrefix("grabacion.") }).max(by: {
+            let a = (try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+            let b = (try? $1.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+            return a < b
+        }) else {
+            reply("No tengo una nota de voz guardada de \(account.title). Mándame una leyendo el guion.")
+            return
+        }
+        reply("Rehaciendo el video de \(account.title) con tu última nota de voz; tarda unos minutos.")
+        deliverVoiced(account, recording: recording)
+    }
+
+    /// Arma el video con la grabación y lo manda con su descripción.
+    private func deliverVoiced(_ account: ContentAccount, recording: URL) {
+        ReelRenderer.renderWithVoice(account, recording: recording) { [weak self] video, problem in
+            guard let video else {
+                self?.reply("No pude armar el video con tu voz: \(problem ?? "sin detalle"). Puedes mandar el audio otra vez.")
+                return
+            }
+            Notifier.sendVideo(video, caption: "\(account.title): video con tu voz, listo para subir") {
+                if let text = Controller.copyText(account.videoFolder.appendingPathComponent("texto.md")) {
+                    self?.reply("Descripción del video de \(account.title), lista para copiar:\n\n\(text)")
+                }
+                let several = ContentAccountStore.load().count > 1
+                self?.reply("¿Lo subo? Responde \"\(several ? "publica \(account.id)" : "publica")\" para subir el carrusel y este video. "
+                            + "Si quieres repetir la grabación, manda otra nota de voz.")
+            }
+        }
+    }
+
+    /// La persona mandó una nota de voz: se une con el video que está esperando voz.
+    func handleRecording(fileId: String, ext: String) {
+        let waiting = UserDefaults.standard.string(forKey: Controller.waitingVoiceKey)
+        let candidates = ContentAccountStore.load().filter {
+            $0.video && FileManager.default.fileExists(atPath: $0.videoFolder.appendingPathComponent("guion.json").path)
+        }
+        guard let account = ContentAccountStore.find(waiting) ?? candidates.first else {
+            reply("Recibí tu audio, pero no tengo ningún video esperando voz. Escribe \"post <cuenta>\" con el video prendido.")
+            return
+        }
+        reply("Recibí tu audio. Armo el video de \(account.title) con tu voz; tarda unos minutos.")
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let file = account.videoFolder.appendingPathComponent("grabacion.\(ext)")
+            guard Telegram.shared.download(fileId: fileId, to: file) else {
+                DispatchQueue.main.async { self?.reply("No pude descargar tu audio de Telegram. Mándalo otra vez.") }
+                return
+            }
+            DispatchQueue.main.async { self?.deliverVoiced(account, recording: file) }
         }
     }
 

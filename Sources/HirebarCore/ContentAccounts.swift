@@ -8,35 +8,6 @@ public enum ContentNetwork: String, Codable, CaseIterable, Sendable {
     public var title: String { self == .linkedin ? "LinkedIn" : "Instagram" }
 }
 
-/// Quién pone la voz del video.
-public enum VoiceEngine: String, Codable, CaseIterable, Sendable {
-    /// Voces que trae macOS: gratis, suenan robóticas.
-    case macos
-    /// Voces neuronales de Microsoft por el servicio de lectura de Edge (edge-tts): naturales, sin cuenta ni clave.
-    /// Hirebar instala edge-tts solo la primera vez.
-    case edge
-    /// Microsoft Azure Speech: las mismas voces con cuenta propia; plan gratis con uso comercial.
-    case azure
-    /// ElevenLabs: las más expresivas; el plan gratis no permite uso comercial.
-    case elevenlabs
-
-    public var title: String {
-        switch self {
-        case .macos: return "Voces del Mac (gratis, robóticas)"
-        case .edge: return "Voces neuronales de Microsoft (gratis, sin cuenta)"
-        case .azure: return "Microsoft Azure (gratis, natural)"
-        case .elevenlabs: return "ElevenLabs (de pago para uso comercial)"
-        }
-    }
-
-    public static let elevenLabsKeychain = "elevenlabs"
-    public static let azureKeychain = "azure-speech"
-    public static let azureRegionKeychain = "azure-speech-region"
-    /// Voz por defecto para Shorts: hombre, acento colombiano.
-    public static let azureDefaultVoice = "es-CO-GonzaloNeural"
-    public static let edgeDefaultVoice = "es-CO-GonzaloNeural"
-}
-
 /// Colores de las imágenes, en hexadecimal (#RRGGBB).
 public struct ContentPalette: Codable, Equatable, Sendable {
     public var background: String
@@ -103,20 +74,15 @@ public struct ContentAccount: Codable, Identifiable, Equatable, Sendable {
     public var palette: ContentPalette
     /// Días en que se prepara publicación sola (lun, mar, mie, jue, vie, sab, dom, todos, habiles).
     public var days: [String]
-    /// Además del carrusel, un video vertical corto (Reel o Short).
+    /// Además del carrusel, un video vertical corto (Reel o Short) que la persona narra con una nota de voz.
     public var video: Bool
-    /// Motor de voz del video.
-    public var voiceEngine: VoiceEngine
-    /// Voz del video: nombre de una voz de macOS o identificador de una voz de ElevenLabs; vacío = la mejor disponible.
-    public var voice: String
-    /// Subtítulos palabra por palabra sobre el video.
+    /// Subtítulos palabra por palabra sobre el video narrado.
     public var captions: Bool
 
     public init(id: String, enabled: Bool = true, network: ContentNetwork = .linkedin, name: String = "",
                 tagline: String = "", handle: String = "", focus: String = ContentAccount.defaultFocus,
                 style: String = PalettePreset.standard.style, palette: ContentPalette = PalettePreset.standard.palette,
-                days: [String] = ["mar", "jue"], video: Bool = false, voiceEngine: VoiceEngine = .edge,
-                voice: String = "", captions: Bool = true) {
+                days: [String] = ["mar", "jue"], video: Bool = false, captions: Bool = true) {
         self.id = id
         self.enabled = enabled
         self.network = network
@@ -128,8 +94,6 @@ public struct ContentAccount: Codable, Identifiable, Equatable, Sendable {
         self.palette = palette
         self.days = days
         self.video = video
-        self.voiceEngine = voiceEngine
-        self.voice = voice
         self.captions = captions
     }
 
@@ -147,8 +111,6 @@ public struct ContentAccount: Codable, Identifiable, Equatable, Sendable {
         palette = try c.decodeIfPresent(ContentPalette.self, forKey: .palette) ?? base.palette
         days = try c.decodeIfPresent([String].self, forKey: .days) ?? base.days
         video = try c.decodeIfPresent(Bool.self, forKey: .video) ?? base.video
-        voiceEngine = try c.decodeIfPresent(VoiceEngine.self, forKey: .voiceEngine) ?? base.voiceEngine
-        voice = try c.decodeIfPresent(String.self, forKey: .voice) ?? base.voice
         captions = try c.decodeIfPresent(Bool.self, forKey: .captions) ?? base.captions
     }
 
@@ -162,7 +124,7 @@ public struct ContentAccount: Codable, Identifiable, Equatable, Sendable {
     public var folder: URL { Paths.content.appendingPathComponent(id, isDirectory: true) }
     public var slides: URL { folder.appendingPathComponent("laminas", isDirectory: true) }
     public var draft: URL { folder.appendingPathComponent("borrador.md") }
-    /// Escenas del video (HTML de 1080×1920), su guion y el video armado (reel.mp4).
+    /// Escenas del video (HTML de 1080×1920), su guion, la vista previa sin voz y el video final narrado (reel.mp4).
     public var videoFolder: URL { folder.appendingPathComponent("video", isDirectory: true) }
 
     /// Música de fondo opcional: un archivo musica.mp3, musica.m4a o musica.wav en la carpeta de la cuenta.
@@ -171,6 +133,16 @@ public struct ContentAccount: Codable, Identifiable, Equatable, Sendable {
             .first { FileManager.default.fileExists(atPath: $0.path) }
     }
     public var changes: URL { folder.appendingPathComponent("cambios.txt") }
+    /// Qué publicaciones anteriores tuvieron más alcance (lo actualiza la IA una vez por semana).
+    public var performance: URL { folder.appendingPathComponent("rendimiento.md") }
+
+    /// Toca revisar el rendimiento en la red si nunca se ha hecho o pasó más de una semana.
+    public var needsPerformanceCheck: Bool {
+        guard let date = (try? FileManager.default.attributesOfItem(atPath: performance.path))?[.modificationDate] as? Date else {
+            return true
+        }
+        return Date().timeIntervalSince(date) > 7 * 86400
+    }
 
     /// Ruta relativa al workspace, para indicársela a la IA.
     public var relativeFolder: String { "contenido/\(id)" }

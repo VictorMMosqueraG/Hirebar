@@ -148,22 +148,21 @@ Panel → **Ajustes**. A la izquierda, los agentes y tus habilidades. Para cada 
 
 ### Cuentas de contenido
 
+Con cada publicación llegan a Telegram, aparte y listos para copiar y pegar, el texto del carrusel y la descripción del video, con hashtags mezclados (generales, del tema, de Cali/Colombia y de la marca). Ninguna publicación se repite: cada una cambia de tema, formato y composición. Una vez por semana la IA revisa en tu Chrome las últimas publicaciones de la cuenta (vistas, me gusta, guardados) y lo anota en `contenido/<cuenta>/rendimiento.md`; con eso favorece lo que más funciona y sigue probando cosas nuevas.
+
 Ajustes → **Cuentas de contenido**. Agrega una cuenta por cada perfil donde quieras publicar (por ejemplo, `empresa` en Instagram y `personal` en LinkedIn). Para cada una:
 - **Identificador**: el nombre corto que usas en Telegram (`post empresa`, `publica empresa`).
 - **Red**: LinkedIn o Instagram.
 - **Nombre en las imágenes**, **línea bajo el nombre** y **usuario**: la firma de cada imagen. Si alguien más baja el repo, pone aquí su propio nombre.
 - **De qué habla y para quién**: el enfoque de los temas.
 - **Días**: cuándo se prepara la publicación sola (a la hora de la tarea del agente Contenido).
-- **También un video corto con voz (Reel o Short)**: además del carrusel llega a Telegram un Short ANIMADO de 20 a 40 segundos pensado para ganar audiencia (no es copia del carrusel). Todo se mueve al ritmo de la voz: titulares que entran palabra por palabra, tarjetas y ventanas de apps, flechas que se dibujan, contadores. Lleva gancho en el primer segundo y cierre con invitación. Hirebar lo graba cuadro por cuadro en tu Mac.
-  - **Motor de voz**:
-    - **Voces neuronales de Microsoft (por defecto)**: naturales, con acento colombiano (Gonzalo), sin cuenta ni clave. Hirebar instala solo la herramienta `edge-tts` la primera vez. Usa el servicio de lectura del navegador Edge de forma no oficial: si algún día deja de responder, el video sale con la voz del Mac y queda anotado en el registro.
-    - **Microsoft Azure**: voces neuronales naturales, con acento colombiano (por defecto, Gonzalo). El plan gratis F0 da medio millón de caracteres al mes y permite uso comercial. En portal.azure.com crea un recurso de "Voz" (Speech) con el plan F0, copia la Clave 1 y la región, y pégalas al final de la página de Cuentas de contenido.
-    - **ElevenLabs**: las voces más expresivas, pero el plan gratis no permite uso comercial (desde el plan Starter sí). Con clave, el botón "Escoger la mejor voz para Shorts" busca la voz en español latino más usada para redes.
-    - **Voces del Mac**: gratis y sin cuentas, pero suenan robóticas.
-    - Las claves quedan en el Llavero del Mac, no en archivos.
-  - **Subtítulos palabra por palabra**: con ElevenLabs van exactos con la voz.
-  - **Música de fondo (opcional)**: pon un archivo `musica.mp3` (o `.m4a`) en `workspace/contenido/<cuenta>/` y se mezcla bajito debajo de la voz. Usa música que puedas usar (por ejemplo, de la biblioteca de audio de YouTube). Si no hay archivo, puedes ponerle una canción de moda al subirlo desde la app de Instagram.
-  - Con `publica <cuenta>` se sube el carrusel y el video aparte.
+- **También un video corto (Reel o Short) narrado con tu voz**: además del carrusel llega a Telegram una vista previa de un Short ANIMADO de 20 a 40 segundos, pensado para ganar audiencia (no es copia del carrusel): titulares que entran palabra por palabra, tarjetas y ventanas de apps, flechas que se dibujan, contadores. Lleva gancho en el primer segundo y cierre con invitación. Hirebar lo graba cuadro por cuadro en tu Mac.
+  - Junto a la vista previa (sin voz) llega el **guion para grabar**, escena por escena, con el tono sugerido.
+  - **Respondes con una nota de voz** en Telegram leyéndolo de corrido. Hirebar limpia el ruido y nivela el volumen, escucha tu audio con el reconocimiento de voz del Mac (gratis, en tu Mac; la primera vez pide permiso) y cuadra cada escena y cada subtítulo con el momento en que dices cada palabra. Te devuelve el video con tu voz y la descripción lista para copiar. Si quieres repetir, manda otra nota de voz.
+  - La primera vez Hirebar instala sola una herramienta de audio (ffmpeg) para leer las notas de voz de Telegram.
+  - **Subtítulos palabra por palabra**: se pueden apagar en la cuenta.
+  - **Música de fondo (opcional)**: pon un archivo `musica.mp3` (o `.m4a`) en `workspace/contenido/<cuenta>/` y se mezcla bajito debajo de tu voz. Usa música que puedas usar (por ejemplo, de la biblioteca de audio de YouTube). Si no hay archivo, puedes ponerle una canción de moda al subirlo desde la app de Instagram.
+  - Con `publica <cuenta>` se sube el carrusel y el video con tu voz aparte.
 - **Paleta**: escoge una lista (por ejemplo, "Negro y naranja") o pon tus colores en hexadecimal. **Estilo de las imágenes** describe en palabras cómo se ven (letras, detalles). La vista previa muestra cómo quedan.
 
 Quedan guardadas en `workspace/contenido/cuentas.json`.
@@ -181,6 +180,7 @@ Quedan guardadas en `workspace/contenido/cuentas.json`.
 | Envío automático | `auto si` · `auto no` · `auto empleo no` · `auto clientes si` |
 | Aprobar o descartar una lista | `si` · `si 1 3` · `no` (o los botones del mensaje) |
 | Correos del día | `envia correos` · `envia correos 1 3` · `no correos` |
+| Video con tu voz | `video <cuenta>` (vuelve a mandar la vista previa y el guion) · responder con una nota de voz (te devuelvo el video con tu voz) |
 | Contenido | `post` · `post <cuenta>` · `post <cuenta> cambia <qué>` · `post <cuenta> salta` · `publica <cuenta>` (con una sola cuenta no hace falta nombrarla) |
 | Perfil | `logro …` · `trabajo …` · `habilidad <nombre> <nivel>` · `habilidades` · `hv` |
 | Nota para el análisis del domingo | `anota entrevista con Acme el jueves` |

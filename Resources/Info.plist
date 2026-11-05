@@ -24,6 +24,8 @@
 	<string>13.0</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Hirebar escucha las notas de voz que mandas por Telegram para cuadrar cada escena del video con tu voz. Todo pasa en tu Mac.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>MIT License · VM Software</string>
 </dict>

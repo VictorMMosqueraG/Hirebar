@@ -28,9 +28,12 @@ enum AgentPrompts {
                 .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             try? FileManager.default.removeItem(at: account.changes)
             let change = note.isEmpty ? "" : "\n\nCambio que pidió \(owner) sobre el borrador anterior: \(note)"
+            let review = account.needsPerformanceCheck
+                ? "\n\nEsta vez toca revisar el rendimiento de la cuenta (sección 0 de tus instrucciones). \(browser)"
+                : ""
             return """
             Contenido \(batch.id) (\(now)). Prepara UNA publicación para esta cuenta según tus instrucciones. \
-            NO publiques nada: \(owner) la aprueba primero desde Telegram.
+            NO publiques nada: \(owner) la aprueba primero desde Telegram.\(review)
 
             \(accountSheet(account))\(change)
             """
@@ -115,7 +118,7 @@ enum AgentPrompts {
         De qué habla y para quién: \(account.focus)
         Paleta: fondo \(p.background), superficie \(p.surface), acento \(p.accent), texto \(p.text), texto secundario \(p.muted)
         Estilo de las imágenes: \(account.style)
-        Video corto: \(account.video ? "SÍ. Además del carrusel, prepara un Short con voz (sección 5 de tus instrucciones) en \(account.relativeFolder)/video/. Es un video ANIMADO e independiente, pensado para ganar audiencia, NO una copia del carrusel. Subtítulos de Hirebar: \(account.captions ? "sí (deja libre su franja)" : "no (el texto clave va animado dentro de cada escena)")." : "no")
+        Video corto: \(account.video ? "SÍ. Además del carrusel, prepara un Short que la persona narra con su voz (sección 5 de tus instrucciones) en \(account.relativeFolder)/video/. Es un video ANIMADO e independiente, pensado para ganar audiencia, NO una copia del carrusel. Subtítulos de Hirebar: \(account.captions ? "sí (deja libre su franja)" : "no (el texto clave va animado dentro de cada escena)")." : "no")
         """
     }
 

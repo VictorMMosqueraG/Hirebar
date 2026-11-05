@@ -5,6 +5,10 @@ public struct TelegramMessage: Sendable {
     public let text: String
     public let replyTo: Int?
     public let callbackId: String?
+    /// Nota de voz o archivo de audio que mandó la persona (identificador de Telegram para descargarlo).
+    public var audioFileId: String? = nil
+    /// Extensión del audio recibido (oga para notas de voz).
+    public var audioExtension: String = "oga"
 }
 
 public final class Telegram: @unchecked Sendable {
@@ -92,9 +96,20 @@ public final class Telegram: @unchecked Sendable {
                                    callbackId: callback["id"] as? String)
         }
         guard let message = update["message"] as? [String: Any],
-              let text = message["text"] as? String,
               let chat = (message["chat"] as? [String: Any])?["id"] as? NSNumber else { return nil }
         let reply = (message["reply_to_message"] as? [String: Any])?["message_id"] as? NSNumber
+        if let audio = (message["voice"] ?? message["audio"] ?? message["video_note"]) as? [String: Any],
+           let fileId = audio["file_id"] as? String {
+            let name = (audio["file_name"] as? String) ?? ""
+            let ext = message["voice"] != nil ? "oga" : (message["video_note"] != nil ? "mp4"
+                : (name.contains(".") ? String(name.split(separator: ".").last ?? "m4a") : "m4a"))
+            var result = TelegramMessage(chatId: chat.int64Value, text: message["caption"] as? String ?? "",
+                                         replyTo: reply?.intValue, callbackId: nil)
+            result.audioFileId = fileId
+            result.audioExtension = ext
+            return result
+        }
+        guard let text = message["text"] as? String else { return nil }
         return TelegramMessage(chatId: chat.int64Value, text: text, replyTo: reply?.intValue, callbackId: nil)
     }
 
@@ -169,6 +184,24 @@ public final class Telegram: @unchecked Sendable {
             }
             DispatchQueue.main.async { completion?() }
         }
+    }
+
+    /// Descarga un archivo que mandó la persona (por ejemplo, una nota de voz). Llamar desde un hilo de fondo.
+    public func download(fileId: String, to target: URL) -> Bool {
+        guard let token = currentToken(),
+              let info = call("getFile", ["file_id": fileId]),
+              let path = (info["result"] as? [String: Any])?["file_path"] as? String,
+              let url = URL(string: "https://api.telegram.org/file/bot\(token)/\(path)") else { return false }
+        final class Box: @unchecked Sendable { var data: Data? }
+        let box = Box()
+        let done = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: URLRequest(url: url, timeoutInterval: 120)) { data, response, _ in
+            if (response as? HTTPURLResponse)?.statusCode == 200 { box.data = data }
+            done.signal()
+        }.resume()
+        done.wait()
+        guard let data = box.data, data.count > 500 else { return false }
+        return (try? data.write(to: target, options: .atomic)) != nil
     }
 
     public func answerCallback(_ id: String, text: String? = nil) {
